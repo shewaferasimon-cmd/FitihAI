@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Stores user account information and subscription status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth unique ID" },
+        "phoneNumber": { "type": "string", "description": "Verified +251 phone number" },
+        "displayName": { "type": "string", "description": "Optional name of the user" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "Access level" },
+        "isSubscribed": { "type": "boolean", "description": "Subscription status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" },
+        "lastLogin": { "type": "string", "format": "date-time", "description": "Last login timestamp" }
+      },
+      "required": ["uid", "phoneNumber", "role", "isSubscribed"]
+    },
+    "UserDocument": {
+      "title": "UserDocument",
+      "description": "Generated legal documents saved by the user",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner ID" },
+        "title": { "type": "string", "description": "Label for the document" },
+        "type": { "type": "string", "description": "Document template type" },
+        "content": { "type": "string", "description": "Full text of the document" },
+        "metadata": { "type": "object", "description": "Form inputs used to generate" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "title", "content"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Individual chat messages for history",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "text": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "text", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User private profile documents"
+    },
+    "/documents/{docId}": {
+      "schema": "UserDocument",
+      "description": "Personalized legal documents"
+    },
+    "/users/{userId}/chats/{chatId}": {
+      "schema": "ChatMessage",
+      "description": "Individual chat message history"
+    }
+  }
+}
