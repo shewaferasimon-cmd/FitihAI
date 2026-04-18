@@ -23,17 +23,18 @@ interface Message {
 }
 
 /**
- * Amharic Law Assistant - Clean Minimalism Theme
+ * FitihAI Legal Assistant - Clean Minimalism Theme
  */
 export default function App() {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [profileExists, setProfileExists] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<string>('user');
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [activeTab, setActiveTab] = useState<'home' | 'chat' | 'docs' | 'profile' | 'admin' | 'market' | 'guides' | 'analyzers'>('home');
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'model',
-      parts: [{ text: 'ሰላም! እኔ የኢትዮጵያ የሕግ ረዳት ነኝ። እንዴት ልረዳዎት እችላለሁ?' }],
+      parts: [{ text: 'ሰላም! እኔ ፍትህ AI (FitihAI) ነኝ—የኢትዮጵያ የሕግ ረዳት። እንዴት ልረዳዎት እችላለሁ?' }],
       timestamp: new Date(),
     },
   ]);
@@ -50,15 +51,19 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
-        // Fetch role
+        // Fetch role and check existence
         const userRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
           setUserRole(userDoc.data().role || 'user');
+          setProfileExists(true);
+        } else {
+          setProfileExists(false);
         }
       } else {
         setCurrentUser(null);
         setUserRole('user');
+        setProfileExists(false);
       }
       setIsAuthChecking(false);
     });
@@ -202,8 +207,8 @@ export default function App() {
     );
   }
 
-  if (!currentUser) {
-    return <AuthModal onSuccess={() => {}} />;
+  if (!currentUser || !profileExists) {
+    return <AuthModal onSuccess={() => setProfileExists(true)} />;
   }
 
   return (

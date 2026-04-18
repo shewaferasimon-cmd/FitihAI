@@ -8,6 +8,12 @@ interface UserData {
   id: string;
   uid: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
+  gender?: string;
+  age?: number;
+  occupation?: string;
+  address?: string;
   phoneNumber: string;
   role: string;
   isSubscribed: boolean;
@@ -222,9 +228,10 @@ export default function AdminPanel() {
               <thead>
                 <tr className="border-b border-white/5">
                   <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">ተጠቃሚ (User)</th>
+                  <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">መረጃ (Info)</th>
+                  <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">አድራሻ (Address)</th>
                   <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">ስታተስ (Status)</th>
                   <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">አጠቃቀም (Usage)</th>
-                  <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest">ምዝገባ (Joined)</th>
                   <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest text-right">እርምጃዎች</th>
                 </tr>
               </thead>
@@ -233,7 +240,7 @@ export default function AdminPanel() {
                   <tr key={user.id} className="border-b border-white/5 group hover:bg-white/[0.02] transition-colors">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black uppercase">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black uppercase overflow-hidden">
                           {user.displayName?.charAt(0) || <Users size={18}/>}
                         </div>
                         <div>
@@ -241,6 +248,18 @@ export default function AdminPanel() {
                           <p className="text-slate-500 text-xs font-bold">{user.phoneNumber}</p>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col gap-1">
+                        <p className="text-white text-xs font-bold">{user.occupation || 'ስራ አልተጠቀሰም'}</p>
+                        <p className="text-slate-500 text-[10px] font-medium">
+                          {user.gender ? `${user.gender === 'Male' ? 'ወንድ' : 'ሴት'} • ` : ''} 
+                          {user.age ? `${user.age} አመት` : ''}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <p className="text-slate-300 text-xs font-medium max-w-[150px] truncate">{user.address || 'አድራሻ የለም'}</p>
                     </td>
                     <td className="px-8 py-6">
                       <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border

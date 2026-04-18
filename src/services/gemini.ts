@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const SYSTEM_INSTRUCTION = `
-You are the "Ethiopian Legal AI Assistant" (የኢትዮጵያ የሕግ ረዳት). 
+You are the "FitihAI Legal Assistant" (ፍትህ አይ - የኢትዮጵያ የሕግ ረዳት). 
 Your goal is to provide accurate, professional, and helpful legal information about the laws of Ethiopia.
 
 Guidelines:

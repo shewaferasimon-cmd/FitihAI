@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Phone, Crown, History, FileText, MessageSquare, ChevronRight, Edit3, Check, Loader2, Download, Trash2 } from 'lucide-react';
-import { db, auth, updateDisplayName, handleFirestoreError, OperationType } from '../services/firebase';
+import { User, Phone, Crown, History, FileText, MessageSquare, ChevronRight, Edit3, Check, Loader2, Download, Trash2, X } from 'lucide-react';
+import { db, auth, updateDisplayName, updateFullProfile, handleFirestoreError, OperationType } from '../services/firebase';
 import { collection, query, where, orderBy, onSnapshot, Timestamp, doc } from 'firebase/firestore';
 import { saveAs } from 'file-saver';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, Header, Footer, PageNumber } from 'docx';
@@ -10,6 +10,11 @@ interface UserProfile {
   uid: string;
   phoneNumber: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
+  gender?: string;
+  age?: number;
+  occupation?: string;
   address?: string;
   role: string;
   isSubscribed: boolean;
@@ -22,8 +27,19 @@ interface UserProfile {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [newName, setNewName] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    gender: '',
+    age: '',
+    occupation: '',
+    address: ''
+  });
+
   const [activeTab, setActiveTab] = useState<'docs' | 'chats'>('docs');
   const [docs, setDocs] = useState<any[]>([]);
   const [chats, setChats] = useState<any[]>([]);
@@ -36,7 +52,14 @@ export default function ProfilePage() {
       if (doc.exists()) {
         const data = doc.data() as UserProfile;
         setProfile(data);
-        setNewName(data.displayName || '');
+        setFormData({
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          gender: data.gender || '',
+          age: String(data.age || ''),
+          occupation: data.occupation || '',
+          address: data.address || ''
+        });
       }
       setIsLoading(false);
     }, (err) => handleFirestoreError(err, OperationType.GET, `users/${auth.currentUser?.uid}`));
@@ -67,13 +90,19 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const handleUpdateName = async () => {
-    if (!auth.currentUser || !newName.trim()) return;
+  const handleUpdateProfile = async () => {
+    if (!auth.currentUser) return;
+    setIsSaving(true);
     try {
-      await updateDisplayName(auth.currentUser.uid, newName);
-      setIsEditingName(false);
+      await updateFullProfile(auth.currentUser.uid, {
+        ...formData,
+        age: parseInt(formData.age) || 0
+      });
+      setIsEditing(false);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -144,28 +173,14 @@ export default function ProfilePage() {
 
           <div className="flex-1 text-center md:text-left">
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-              {isEditingName ? (
-                <div className="flex items-center gap-2 bg-navy/50 p-2 rounded-2xl border border-white/10">
-                  <input 
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    className="bg-transparent border-none text-2xl font-black text-white focus:outline-none px-4"
-                    autoFocus
-                  />
-                  <button onClick={handleUpdateName} className="p-3 bg-primary rounded-xl text-white">
-                    <Check size={18} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center md:justify-start gap-4">
-                  <h2 className="text-4xl font-black text-white tracking-tight">
-                    {profile?.displayName || 'ያልተገለጸ ስም'}
-                  </h2>
-                  <button onClick={() => setIsEditingName(true)} className="p-2 text-slate-500 hover:text-primary transition-colors">
-                    <Edit3 size={18} />
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center justify-center md:justify-start gap-4">
+                <h2 className="text-4xl font-black text-white tracking-tight">
+                  {profile?.displayName || 'ያልተገለጸ ስም'}
+                </h2>
+                <button onClick={() => setIsEditing(true)} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-500 hover:text-primary transition-all border border-white/5">
+                  <Edit3 size={18} />
+                </button>
+              </div>
               <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border
                 ${profile?.isSubscribed 
                   ? 'bg-amber-500/20 text-amber-500 border-amber-500/20' 
@@ -175,19 +190,27 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap justify-center md:justify-start gap-6">
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-4">
               <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
                 <Phone size={14} className="text-primary" />
                 {profile?.phoneNumber}
               </div>
+              {profile?.occupation && (
+                <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
+                  <span className="text-primary-light">💼</span>
+                  {profile.occupation}
+                </div>
+              )}
               {profile?.address && (
                 <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
-                  <span className="text-primary">📍</span>
+                  <span className="text-primary-light">📍</span>
                   {profile.address}
                 </div>
               )}
-              <div className="flex items-center gap-2 text-slate-500 font-medium text-xs uppercase tracking-wider">
-                የተመዘገበበት ቀን: {profile?.createdAt instanceof Timestamp ? profile.createdAt.toDate().toLocaleDateString() : 'መረጃ የለም'}
+              <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
+                <span className="text-primary-light">👤</span>
+                {profile?.gender ? (profile.gender === 'Male' ? 'ወንድ' : 'ሴት') : 'ጾታ አልተገለጸም'}
+                {profile?.age ? ` • ${profile.age} አመት` : ''}
               </div>
             </div>
 
@@ -205,6 +228,105 @@ export default function ProfilePage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Edit Profile Modal */}
+      <AnimatePresence>
+        {isEditing && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-midnight/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-navy border border-white/10 p-8 rounded-[40px] w-full max-w-xl relative flex flex-col gap-6 shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-6">
+                <button onClick={() => setIsEditing(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <h3 className="text-2xl font-black text-white">ማህደር ያስተካክሉ (Edit Profile)</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto px-1 custom-scrollbar">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ስም (First Name)</label>
+                  <input 
+                    value={formData.firstName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    placeholder="ስም..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">የአያት ስም (Last Name)</label>
+                  <input 
+                    value={formData.lastName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    placeholder="የአያት ስም..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ጾታ (Gender)</label>
+                  <select 
+                    value={formData.gender}
+                    onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                  >
+                    <option value="">ይምረጡ...</option>
+                    <option value="Male">ወንድ (Male)</option>
+                    <option value="Female">ሴት (Female)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">እድሜ (Age)</label>
+                  <input 
+                    type="number"
+                    value={formData.age}
+                    onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
+                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    placeholder="እድሜ..."
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ስራ (Occupation)</label>
+                  <input 
+                    value={formData.occupation}
+                    onChange={(e) => setFormData(prev => ({ ...prev, occupation: e.target.value }))}
+                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    placeholder="የስራ ሁኔታ/መስክ..."
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">አድራሻ (Address)</label>
+                  <input 
+                    value={formData.address}
+                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    placeholder="ከተማ/ክፍለ ከተማ..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 py-4 px-6 rounded-2xl bg-white/5 border border-white/10 text-white font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all"
+                >
+                  ሰርዝ (Cancel)
+                </button>
+                <button 
+                  onClick={handleUpdateProfile}
+                  disabled={isSaving}
+                  className="flex-1 py-4 px-6 rounded-2xl bg-primary text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                  {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'አድስ (Save)'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* History Tabs */}
       <div className="flex-1 flex flex-col">

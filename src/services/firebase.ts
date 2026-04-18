@@ -1,5 +1,50 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { 
+  getAuth, 
+  RecaptchaVerifier, 
+  signInWithPhoneNumber, 
+  onAuthStateChanged, 
+  signOut, 
+  User,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile
+} from 'firebase/auth';
+
+// Google Auth
+export const googleProvider = new GoogleAuthProvider();
+export const signInWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.error('Google Sign In Error:', error);
+    throw error;
+  }
+};
+
+// Email Auth
+export const signInEmail = async (email: string, pass: string) => {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, pass);
+    return result.user;
+  } catch (error) {
+    console.error('Email Sign In Error:', error);
+    throw error;
+  }
+};
+
+export const signUpEmail = async (email: string, pass: string) => {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, pass);
+    return result.user;
+  } catch (error) {
+    console.error('Email Sign Up Error:', error);
+    throw error;
+  }
+};
 import { getFirestore, doc, getDoc, setDoc, addDoc, serverTimestamp, onSnapshot, collection, query, where, orderBy, updateDoc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -99,10 +144,16 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 // User profile helper
 export const syncUserProfile = async (user: User, additionalData?: { 
   displayName?: string; 
+  firstName?: string;
+  lastName?: string;
+  gender?: string;
+  age?: number;
+  occupation?: string;
   address?: string; 
   role?: string;
   specialization?: string;
   licenseNumber?: string;
+  phoneNumber?: string;
 }) => {
   const userRef = doc(db, 'users', user.uid);
   try {
@@ -111,18 +162,24 @@ export const syncUserProfile = async (user: User, additionalData?: {
       // Demo accounts check
       let role = additionalData?.role || 'user';
       let isSubscribed = false;
+      const currentPhone = user.phoneNumber || additionalData?.phoneNumber || '';
       
-      if (user.phoneNumber === '+251900000000') {
+      if (currentPhone === '+251900000000') {
         role = 'admin';
         isSubscribed = true;
-      } else if (user.phoneNumber === '+251911111111') {
+      } else if (currentPhone === '+251911111111' || currentPhone === '+251933333333') {
         isSubscribed = true;
       }
 
       const userData = {
         uid: user.uid,
-        phoneNumber: user.phoneNumber,
+        phoneNumber: currentPhone,
         displayName: additionalData?.displayName || user.displayName || '',
+        firstName: additionalData?.firstName || '',
+        lastName: additionalData?.lastName || '',
+        gender: additionalData?.gender || '',
+        age: additionalData?.age || 0,
+        occupation: additionalData?.occupation || '',
         address: additionalData?.address || '',
         role: role,
         isSubscribed: isSubscribed,
@@ -141,6 +198,12 @@ export const syncUserProfile = async (user: User, additionalData?: {
         await setDoc(lawyerRef, {
           uid: user.uid,
           displayName: userData.displayName,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          gender: userData.gender,
+          age: userData.age,
+          occupation: userData.occupation,
+          address: userData.address,
           specialization: additionalData?.specialization || 'General',
           licenseNumber: additionalData?.licenseNumber || '',
           experience: 1,
@@ -188,6 +251,33 @@ export const updateDisplayName = async (uid: string, name: string) => {
   const userRef = doc(db, 'users', uid);
   try {
     await updateDoc(userRef, { displayName: name });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `users/${uid}`);
+  }
+};
+
+export const updateFullProfile = async (uid: string, data: {
+  firstName: string;
+  lastName: string;
+  gender: string;
+  age: number;
+  occupation: string;
+  address: string;
+}) => {
+  const userRef = doc(db, 'users', uid);
+  try {
+    const updateData = {
+      ...data,
+      displayName: `${data.firstName} ${data.lastName}`.trim()
+    };
+    await updateDoc(userRef, updateData);
+    
+    // Also update lawyer profile if they are a lawyer
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists() && userDoc.data().role === 'lawyer') {
+      const lawyerRef = doc(db, 'lawyers', uid);
+      await updateDoc(lawyerRef, updateData);
+    }
   } catch (err) {
     handleFirestoreError(err, OperationType.UPDATE, `users/${uid}`);
   }

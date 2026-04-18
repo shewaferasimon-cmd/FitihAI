@@ -4,7 +4,7 @@ import { Shield, TrendingUp, FileCheck, ClipboardList, Gavel, AlertTriangle, Che
 import { useLegalTool } from '../services/gemini';
 import ReactMarkdown from 'react-markdown';
 
-type ToolId = 'risk-analyzer' | 'outcome-predictor' | 'loophole-finder' | 'property-analyzer' | 'labor-analyzer' | 'procedural-guide' | 'court-guide';
+type ToolId = 'risk-analyzer' | 'outcome-predictor' | 'loophole-finder' | 'property-analyzer' | 'labor-analyzer' | 'family-analyzer' | 'tax-analyzer' | 'procedural-guide' | 'court-guide';
 
 interface Tool {
   id: ToolId;
@@ -87,6 +87,26 @@ const TOOLS: Tool[] = [
     color: 'text-rose-400',
     bg: 'bg-rose-400/10',
     placeholder: 'ስለ ስንብት፣ ስለ ደመወዝ ወይም ስለ ሌሎች የስራ ክርክሮች ይግለጹ...'
+  },
+  {
+    id: 'family-analyzer',
+    type: 'analyzer',
+    title: 'የቤተሰብ ህግ መተንተኛ',
+    desc: 'የጋብቻ፣ የፍቺ እና የውርስ ክርክሮችን በተሻሻለው የቤተሰብ ህግ መሰረት ይተንትኑ።',
+    icon: Shield,
+    color: 'text-pink-500',
+    bg: 'bg-pink-500/10',
+    placeholder: 'ስለ ፍቺ፣ ስለ ቀለብ ወይም ስለ ውርስ ክፍፍል ዝርዝር ሁኔታ ይጥቀሱ...'
+  },
+  {
+    id: 'tax-analyzer',
+    type: 'analyzer',
+    title: 'የታክስ ተገዢነት መተንተኛ',
+    desc: 'ንግድዎ ያለበትን የታክስ ግዴታዎች እና ተገዢነት በኢትዮጵያ የታክስ ህጎች መሰረት ይለዩ።',
+    icon: FileText,
+    color: 'text-amber-600',
+    bg: 'bg-amber-600/10',
+    placeholder: 'ስለ ተመላሽ ታክስ፣ ስለ ተጨማሪ እሴት ታክስ (VAT) ወይም ስለ ገቢ ግብር ይግለጹ...'
   }
 ];
 
