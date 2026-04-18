@@ -42,7 +42,7 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
              (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-              (request.auth.token.phone_number == "+251911234567" && request.auth.token.firebase.sign_in_provider == 'phone')); 
+              (request.auth.token.phone_number == "+251900000000" && request.auth.token.firebase.sign_in_provider == 'phone')); 
     }
 
     function isValidUser(data) {
@@ -98,6 +98,25 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidDocument(request.resource.data);
       allow update: if isDocOwner() && isValidDocument(request.resource.data);
       allow delete: if isDocOwner();
+    }
+
+    match /lawyers/{lawyerId} {
+      allow get: if isAuthenticated();
+      allow list: if isAdmin() || (isAuthenticated() && resource.data.isVerified == true);
+      allow create, update: if isOwner(lawyerId) && (isAdmin() || isValidLawyer(request.resource.data));
+      allow delete: if isAdmin();
+    }
+
+    match /consultations/{consultationId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.lawyerId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidConsultation(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || resource.data.lawyerId == request.auth.uid || isAdmin()) && isValidConsultation(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

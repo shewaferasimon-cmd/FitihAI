@@ -29,7 +29,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<string>('user');
   const [isAuthChecking, setIsAuthChecking] = useState(true);
-  const [activeTab, setActiveTab] = useState<'home' | 'chat' | 'docs' | 'profile' | 'admin' | 'market' | 'tools'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'chat' | 'docs' | 'profile' | 'admin' | 'market' | 'guides' | 'analyzers'>('home');
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'model',
@@ -242,7 +242,8 @@ export default function App() {
                    { id: 'home', label: 'ዋና ገጽ', icon: Home },
                    { id: 'chat', label: 'ረዳት ጋር ያውሩ', icon: MessageSquare },
                    { id: 'docs', label: 'ሰነድ አዘጋጅ', icon: FileEdit },
-                   { id: 'tools', label: 'የህግ መሣሪያዎች', icon: Scale },
+                   { id: 'guides', label: 'መመሪያዎች', icon: FileText },
+                   { id: 'analyzers', label: 'መተንተኛ', icon: Scale },
                    { id: 'market', label: 'ጠበቃ ይፈልጉ', icon: Briefcase },
                    { id: 'profile', label: 'የግል ማህደር', icon: User },
                    ...(userRole === 'admin' ? [{ id: 'admin', label: 'አስተዳዳሪ ፓነል', icon: Shield }] : [])
@@ -360,7 +361,8 @@ export default function App() {
                   {activeTab === 'home' ? 'እንኳን ደህና መጡ' :
                    activeTab === 'chat' ? 'የህግ ረዳት' : 
                    activeTab === 'docs' ? 'ሰነድ አዘጋጅ' : 
-                   activeTab === 'tools' ? 'የህግ መሣሪያዎች' :
+                   activeTab === 'guides' ? 'ደረጃ-በደረጃ መመሪያ' :
+                   activeTab === 'analyzers' ? 'የውል እና የውሳኔ መተንተኛ' :
                    activeTab === 'market' ? 'የጠበቆች ገበያ' :
                    activeTab === 'admin' ? 'የአስተዳዳሪ ፓነል' : 'የግል ማህደር'}
                </span>
@@ -408,20 +410,29 @@ export default function App() {
                   {
                     id: 'docs',
                     title: 'ሰነድ አዘጋጅ',
-                    desc: 'ኮንትራቶች፣ ውሎች እና የክስ ማመልከቻዎችን በፕሮፌሽናል ደረጃ ያዘጋጁ።',
+                    desc: 'ኮንትራቶች፣ ውሎች፣ የ HR ፖሊሲ እና የክስ ማመልከቻዎችን ያዘጋጁ።',
                     icon: FileEdit,
                     color: 'text-emerald-500',
                     bg: 'bg-emerald-500/10',
                     delay: 0.3
                   },
                   {
-                    id: 'tools',
-                    title: 'የላቁ መሣሪያዎች',
-                    desc: 'የውል ስጋት ትንተና፣ የውሳኔ ግምት እና የ HR ፖሊሲ ማዘጋጃ።',
+                    id: 'guides',
+                    title: 'የደረጃ-በደረጃ መመሪያዎች',
+                    desc: 'ለንግድ ፈቃድ፣ ለታክስ እና ለፍርድ ቤት ሂደቶች የሚረዱ መመሪያዎች።',
+                    icon: FileText,
+                    color: 'text-purple-500',
+                    bg: 'bg-purple-500/10',
+                    delay: 0.4
+                  },
+                  {
+                    id: 'analyzers',
+                    title: 'የህግ መተንተኛ',
+                    desc: 'የውል ስጋት ትንተና እና የቀረቡ ፍሬ ነገሮች መነሻ የውሳኔ ግምት።',
                     icon: Scale,
                     color: 'text-rose-500',
                     bg: 'bg-rose-500/10',
-                    delay: 0.4
+                    delay: 0.5
                   },
                   {
                     id: 'market',
@@ -430,16 +441,7 @@ export default function App() {
                     icon: Briefcase,
                     color: 'text-amber-500',
                     bg: 'bg-amber-500/10',
-                    delay: 0.5
-                  },
-                  {
-                    id: 'profile',
-                    title: 'የግል ማህደር',
-                    desc: 'የአጠቃቀም ታሪክዎን እና የሂሳብዎን ስታተስ ይመልከቱ።',
-                    icon: User,
-                    color: 'text-purple-500',
-                    bg: 'bg-purple-500/10',
-                    delay: 0.4
+                    delay: 0.6
                   }
                 ].map((item) => (
                   <motion.button
@@ -617,9 +619,13 @@ export default function App() {
           <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
             <DocumentCreator />
           </div>
-        ) : activeTab === 'tools' ? (
+        ) : activeTab === 'guides' ? (
           <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
-            <LegalTools />
+            <LegalTools mode="guide" />
+          </div>
+        ) : activeTab === 'analyzers' ? (
+          <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
+            <LegalTools mode="analyzer" />
           </div>
         ) : activeTab === 'market' ? (
           <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">

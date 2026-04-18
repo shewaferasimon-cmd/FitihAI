@@ -1,12 +1,26 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, addDoc, serverTimestamp, onSnapshot, collection, query, where, orderBy, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, addDoc, serverTimestamp, onSnapshot, collection, query, where, orderBy, updateDoc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+// CRITICAL: Connection Test
+async function testConnection() {
+  try {
+    // Attempt to ping the backend
+    await getDocFromServer(doc(db, '_health_', 'check')).catch(() => {});
+    console.log("Firestore connection initialized.");
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Firestore connectivity issue detected. Please check if your database is provisioned and reachable.");
+    }
+  }
+}
+testConnection();
 
 // SMS OTP Verification Pattern for Ethiopia (+251)
 export const setupRecaptcha = (containerId: string) => {
@@ -83,13 +97,19 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 }
 
 // User profile helper
-export const syncUserProfile = async (user: User, additionalData?: { displayName?: string; address?: string }) => {
+export const syncUserProfile = async (user: User, additionalData?: { 
+  displayName?: string; 
+  address?: string; 
+  role?: string;
+  specialization?: string;
+  licenseNumber?: string;
+}) => {
   const userRef = doc(db, 'users', user.uid);
   try {
     const userDoc = await getDoc(userRef);
     if (!userDoc.exists()) {
       // Demo accounts check
-      let role = 'user';
+      let role = additionalData?.role || 'user';
       let isSubscribed = false;
       
       if (user.phoneNumber === '+251900000000') {
@@ -99,7 +119,7 @@ export const syncUserProfile = async (user: User, additionalData?: { displayName
         isSubscribed = true;
       }
 
-      await setDoc(userRef, {
+      const userData = {
         uid: user.uid,
         phoneNumber: user.phoneNumber,
         displayName: additionalData?.displayName || user.displayName || '',
@@ -111,7 +131,26 @@ export const syncUserProfile = async (user: User, additionalData?: { displayName
         balance: 0,
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp()
-      });
+      };
+
+      await setDoc(userRef, userData);
+
+      // If they are a lawyer, sync to lawyers collection too
+      if (role === 'lawyer') {
+        const lawyerRef = doc(db, 'lawyers', user.uid);
+        await setDoc(lawyerRef, {
+          uid: user.uid,
+          displayName: userData.displayName,
+          specialization: additionalData?.specialization || 'General',
+          licenseNumber: additionalData?.licenseNumber || '',
+          experience: 1,
+          bio: '',
+          isVerified: false, // Must be verified by admin
+          rating: 5.0,
+          hourlyRate: 500,
+          createdAt: serverTimestamp()
+        });
+      }
     } else {
       await updateDoc(userRef, { lastLogin: serverTimestamp() });
     }

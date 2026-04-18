@@ -50,6 +50,16 @@ const DOCUMENT_TYPES = [
     name: 'የክስ ማመልከቻ (Lawsuit/Claim)', 
     fields: ['ከሳሽ (Plaintiff)', 'ተከሳሽ (Defendant)', 'የፍርድ ቤት ስም', 'የክሱ ምክንያት (Cause)', 'የጥያቄው ዝርዝር (Claim Detail)', 'ማስረጃዎች (Evidence)', 'ተዛማጅ አንቀጾች ካሉ'] 
   },
+  { 
+    id: 'terms', 
+    name: 'አጠቃላይ የአጠቃቀም ደንብ (Terms and Conditions)', 
+    fields: ['የድርጅቱ ስም', 'የድርጅቱ አድራሻ', 'የአገልግሎት ዓይነት', 'ኃላፊነቶች', 'ክፍያ ካለ'] 
+  },
+  { 
+    id: 'hr-policy', 
+    name: 'የሰራተኛ ፖሊሲ (HR Policy)', 
+    fields: ['የድርጅቱ ስም', 'የድርጅቱ አድራሻ', 'የሥራ ዘርፍ', 'የሥራ ሰዓት', 'የዕረፍት ቀናት', 'የስነ-ምግባር ደንቦች'] 
+  },
 ];
 
 export default function DocumentCreator() {

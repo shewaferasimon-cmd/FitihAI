@@ -4,10 +4,11 @@ import { Shield, TrendingUp, FileCheck, ClipboardList, Gavel, AlertTriangle, Che
 import { useLegalTool } from '../services/gemini';
 import ReactMarkdown from 'react-markdown';
 
-type ToolId = 'hr-policy' | 'risk-analyzer' | 'outcome-predictor' | 'procedural-guide' | 'court-guide';
+type ToolId = 'risk-analyzer' | 'outcome-predictor' | 'loophole-finder' | 'property-analyzer' | 'labor-analyzer' | 'procedural-guide' | 'court-guide';
 
 interface Tool {
   id: ToolId;
+  type: 'analyzer' | 'guide';
   title: string;
   desc: string;
   icon: any;
@@ -19,16 +20,27 @@ interface Tool {
 
 const TOOLS: Tool[] = [
   {
-    id: 'hr-policy',
-    title: 'የሰራተኛ ፖሊሲ (HR Policy)',
-    desc: 'በ2011 የሰራተኛና ማህበራዊ ጉዳይ አዋጅ መሰረት የውስጥ ደንቦችን ያዘጋጁ።',
-    icon: ClipboardList,
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-    placeholder: 'ስለ ድርጅቱ እና ስለሚፈለገው ፖሊሲ ዝርዝር ይግለጹ (ለምሳሌ፦ የዕረፍት ፈቃድ መመሪያ)...'
+    id: 'procedural-guide',
+    type: 'guide',
+    title: 'ደረጃ-በደረጃ መመሪያ (Guides)',
+    desc: 'የፍርድ ቤት፣ የንግድ ፈቃድ፣ የታክስ እና ለተለያዩ የመንግስት አገልግሎቶች ዝርዝር መመሪያ።',
+    icon: FileCheck,
+    color: 'text-purple-500',
+    bg: 'bg-purple-500/10',
+    placeholder: 'ተጨማሪ ዝርዝር ካለዎት እዚህ ይጥቀሱ...',
+    options: [
+      'የፍርድ ቤት ሂደት (Court Procedure)',
+      'የንግድ ፈቃድ (Business Permit)',
+      'የታክስ ምዝገባ (Tax Registration)',
+      'የሊዝ ውል እድሳት (Lease Renewal)',
+      'የስም ዝውውር (Title Transfer)',
+      'የመሬት ግንኙነት (Land Services)',
+      'ሌላ (Other)'
+    ]
   },
   {
     id: 'risk-analyzer',
+    type: 'analyzer',
     title: 'የውል ስጋት መተንተኛ',
     desc: 'ውሎችን መርምረው ያሉባቸውን ክፍተቶች እና ሊያስከትሉ የሚችሉትን ስጋቶች ይለዩ።',
     icon: AlertTriangle,
@@ -38,6 +50,7 @@ const TOOLS: Tool[] = [
   },
   {
     id: 'outcome-predictor',
+    type: 'analyzer',
     title: 'የውሳኔ ግምት (Outcome Predictor)',
     desc: 'የቀረቡትን ፍሬ ነገሮች መነሻ በማድረግ የፍርድ ቤቱን የውሳኔ አዝማሚያ ይገምቱ።',
     icon: TrendingUp,
@@ -46,40 +59,69 @@ const TOOLS: Tool[] = [
     placeholder: 'የክሱን ዝርዝር እና የቀረቡ ማስረጃዎችን በጥብቅ ይግለጹ...'
   },
   {
-    id: 'procedural-guide',
-    title: 'ደረጃ-በደረጃ መመሪያ (Guides)',
-    desc: 'ለንግድ ፈቃድ፣ ለታክስ እና ለተለያዩ የመንግስት አገልግሎቶች ዝርዝር መመሪያ።',
-    icon: FileCheck,
-    color: 'text-purple-500',
-    bg: 'bg-purple-500/10',
-    placeholder: 'ተጨማሪ ዝርዝር ካለዎት እዚህ ይጥቀሱ...',
-    options: [
-      'የንግድ ፈቃድ (Business Permit)',
-      'የታክስ ምዝገባ (Tax Registration)',
-      'የሊዝ ውል እድሳት (Lease Renewal)',
-      'የስም ዝውውር (Title Transfer)',
-      'ሌላ (Other)'
-    ]
+    id: 'loophole-finder',
+    type: 'analyzer',
+    title: 'የህግ ክፍተት መፈለጊያ',
+    desc: 'በውሎች ወይም በህግ ሰነዶች ውስጥ ያሉ ክፍተቶችን እና ደካማ ነጥቦችን ይፈልጉ።',
+    icon: Wand2,
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+    placeholder: 'ለመተንተን የሚፈልጉትን ሰነድ እዚህ ያስገቡ...'
   },
   {
-    id: 'court-guide',
-    title: 'የፍርድ ቤት ሂደት መመሪያ',
-    desc: 'ከመጀመሪያ ክስ እስከ ፍርድ አፈጻጸም ያሉትን የክርክር ደረጃዎች ይረዱ።',
-    icon: Gavel,
-    color: 'text-rose-500',
-    bg: 'bg-rose-500/10',
-    placeholder: 'ስለ የትኛው የፍርድ ሂደት ማወቅ ይፈልጋሉ? (ለምሳሌ፦ የፍትሐ ብሔር ክስ ደረጃዎች)...'
+    id: 'property-analyzer',
+    type: 'analyzer',
+    title: 'የንብረት ክርክር መተንተኛ',
+    desc: 'የቤት፣ የመሬት እና ሌሎች ንብረት ነክ ክርክሮችን በህግ አግባብ ይመልከቱ።',
+    icon: Shield,
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-500/10',
+    placeholder: 'ስለ ንብረቱ እና ስለ ክርክሩ ዝርዝር ሁኔታ ይግለጹ...'
+  },
+  {
+    id: 'labor-analyzer',
+    type: 'analyzer',
+    title: 'የሰራተኛ ክርክሮች መተንተኛ',
+    desc: 'የሰራተኛ እና አሰሪ አለመግባባቶችን በ2011 የሰራተኛ አዋጅ መሰረት ይተንትኑ።',
+    icon: ClipboardList,
+    color: 'text-rose-400',
+    bg: 'bg-rose-400/10',
+    placeholder: 'ስለ ስንብት፣ ስለ ደመወዝ ወይም ስለ ሌሎች የስራ ክርክሮች ይግለጹ...'
   }
 ];
 
-export default function LegalTools() {
+interface LegalToolsProps {
+  mode?: 'analyzer' | 'guide';
+}
+
+export default function LegalTools({ mode }: LegalToolsProps) {
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const filteredTools = mode ? TOOLS.filter(t => t.type === mode) : TOOLS;
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [inputData, setInputData] = useState('');
   const [result, setResult] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<{name: string, type: string, base64?: string}[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const getTitle = () => {
+    if (mode === 'analyzer') return 'የህግ መተንተኛ (Analysis Tools)';
+    if (mode === 'guide') return 'ደረጃ-በደረጃ መመሪያዎች (Guides)';
+    return 'የላቁ የህግ መሣሪያዎች (Advanced Tools)';
+  };
+
+  const getSubTitle = () => {
+    if (mode === 'analyzer') return 'የውል እና የውሳኔ መተንተኛ';
+    if (mode === 'guide') return 'የንግድ፣ የታክስ እና የፍርድ ቤት መመሪያዎች';
+    return 'AI የታገዘ የህግ ምርመራ እና ትንተና';
+  };
+
+  // Skip selection if only one tool in filtered list (User Feedback fix)
+  React.useEffect(() => {
+    if (mode && filteredTools.length === 1 && !selectedTool) {
+      setSelectedTool(filteredTools[0]);
+    }
+  }, [mode, filteredTools, selectedTool]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -119,8 +161,14 @@ export default function LegalTools() {
         ${attachedFiles.length > 0 ? `\n[Attached Files: ${attachedFiles.map(f => f.name).join(', ')}]` : ''}
       `;
 
+      // Context-aware tool ID selection
+      let toolIdToSend = selectedTool.id;
+      if (selectedOption === 'የፍርድ ቤት ሂደት (Court Procedure)') {
+        toolIdToSend = 'court-guide';
+      }
+
       // Pass files to AI service
-      const response = await useLegalTool(selectedTool.id, combinedInput, attachedFiles);
+      const response = await useLegalTool(toolIdToSend as any, combinedInput, attachedFiles);
       setResult(response || 'ምንም ምላሽ አልተገኘም።');
     } catch (error) {
       console.error(error);
@@ -149,13 +197,13 @@ export default function LegalTools() {
             <div>
               <h2 className="text-4xl font-black text-white flex items-center gap-4">
                 <Wand2 className="text-primary" size={40} />
-                የላቁ የህግ መሣሪያዎች (Advanced Tools)
+                {getTitle()}
               </h2>
-              <p className="text-slate-500 font-bold mt-2 uppercase tracking-widest text-xs">AI የታገዘ የህግ ምርመራ እና ትንተና</p>
+              <p className="text-slate-500 font-bold mt-2 uppercase tracking-widest text-xs">{getSubTitle()}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {TOOLS.map((tool) => (
+              {filteredTools.map((tool) => (
                 <motion.button
                   key={tool.id}
                   whileHover={{ scale: 1.02 }}
@@ -183,13 +231,15 @@ export default function LegalTools() {
             className="space-y-10"
           >
             <div className="flex items-center justify-between">
-              <button 
-                onClick={() => setSelectedTool(null)}
-                className="flex items-center gap-2 text-primary font-black text-sm uppercase tracking-widest hover:gap-4 transition-all"
-              >
-                <ArrowLeft size={18} />
-                ተመለስ
-              </button>
+              {filteredTools.length > 1 ? (
+                <button 
+                  onClick={() => setSelectedTool(null)}
+                  className="flex items-center gap-2 text-primary font-black text-sm uppercase tracking-widest hover:gap-4 transition-all"
+                >
+                  <ArrowLeft size={18} />
+                  ተመለስ
+                </button>
+              ) : <div />}
             </div>
             
             <div className="space-y-6">
@@ -303,7 +353,7 @@ export default function LegalTools() {
                     ) : (
                       <Wand2 size={20} />
                     )}
-                    {isAnalyzing ? 'በመተንተን ላይ...' : 'ትንተናውን ጀምር'}
+                    {isAnalyzing ? 'በመሰናዳት ላይ...' : 'አስገባ (Submit)'}
                   </button>
                 </div>
 
@@ -312,7 +362,7 @@ export default function LegalTools() {
                     <Info size={20} />
                   </div>
                   <p className="text-xs text-slate-500 font-bold leading-relaxed italic">
-                    ማሳሰቢያ፦ ይህ ትንተና በAI የታገዘ በመሆኑ ለውሳኔዎችዎ መነሻ እንጂ ፍጹም የህግ መመሪያ አይደለም። ለተሟላ መረጃ ጠበቃ ያማክሩ።
+                    ማሳሰቢያ፦ ይህ መረጃ በAI የታገዘ በመሆኑ ለውሳኔዎችዎ መነሻ እንጂ ፍጹም የህግ መመሪያ አይደለም። ለተሟላ መረጃ ጠበቃ ያማክሩ።
                   </p>
                 </div>
               </div>
@@ -320,7 +370,7 @@ export default function LegalTools() {
               {/* Output Side */}
               <div className="glass rounded-[40px] border border-white/5 flex flex-col min-h-[500px] overflow-hidden">
                 <div className="p-8 border-b border-white/5 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">የትንተና ውጤት (Analysis Result)</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">ምላሽ (Response)</span>
                   {result && (
                     <div className="flex gap-2">
                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -348,7 +398,7 @@ export default function LegalTools() {
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center gap-4 text-slate-700">
                       <FileCheck size={48} strokeWidth={1} />
-                      <p className="font-bold text-sm">ውጤቱን ለማየት ትንተናውን ይጀምሩ።</p>
+                      <p className="font-bold text-sm">ውጤቱን ለማየት ጀምር የሚለውን ይጫኑ።</p>
                     </div>
                   )}
                 </div>
