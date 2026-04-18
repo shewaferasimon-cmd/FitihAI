@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Scale, Bot, User, Trash2, Info, ChevronRight, Menu, X, FileEdit, MessageSquare, LogOut, Settings, Shield, Home } from 'lucide-react';
+import { Send, Scale, Bot, User, Trash2, Info, ChevronRight, Menu, X, FileEdit, MessageSquare, LogOut, Settings, Shield, Home, Briefcase, Paperclip, Image as ImageIcon, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { chatWithAI } from './services/gemini.ts';
 import DocumentCreator from './components/DocumentCreator.tsx';
 import ProfilePage from './components/ProfilePage.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
+import LegalTools from './components/LegalTools.tsx';
+import LawyerMarketplace from './components/LawyerMarketplace.tsx';
 import { auth, saveChatMessage, incrementUsage, db } from './services/firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -27,7 +29,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<string>('user');
   const [isAuthChecking, setIsAuthChecking] = useState(true);
-  const [activeTab, setActiveTab] = useState<'home' | 'chat' | 'docs' | 'profile' | 'admin'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'chat' | 'docs' | 'profile' | 'admin' | 'market' | 'tools'>('home');
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'model',
@@ -39,6 +41,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<{name: string, type: string, base64?: string}[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -68,7 +72,7 @@ export default function App() {
   }, [messages, isLoading, activeTab]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !currentUser) return;
+    if ((!input.trim() && attachedFiles.length === 0) || isLoading || !currentUser) return;
 
     // Check Limits
     const userRef = doc(db, 'users', currentUser.uid);
@@ -81,20 +85,35 @@ export default function App() {
       }
     }
 
+    const messageParts: any[] = [{ text: input }];
+
+    // Add multimodal files
+    attachedFiles.forEach(file => {
+      if (file.base64 && file.type.startsWith('image/')) {
+        messageParts.push({
+          inlineData: {
+            data: file.base64,
+            mimeType: file.type
+          }
+        });
+      }
+    });
+
     const userMessage: Message = {
       role: 'user',
-      parts: [{ text: input }],
+      parts: messageParts,
       timestamp: new Date(),
     };
 
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
+    setAttachedFiles([]);
     setIsLoading(true);
 
-    // Save user message to history
+    // Save user message to history (omitting image b64 for storage efficiency in this demo)
     if (currentUser) {
-      saveChatMessage(currentUser.uid, input, 'user');
+      saveChatMessage(currentUser.uid, input + (attachedFiles.length > 0 ? ` [Attached: ${attachedFiles.map(f => f.name).join(', ')}]` : ''), 'user');
     }
 
     try {
@@ -134,6 +153,28 @@ export default function App() {
         timestamp: new Date(),
       },
     ]);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target?.result as string;
+          setAttachedFiles(prev => [...prev, {
+            name: file.name,
+            type: file.type,
+            base64: base64.split(',')[1]
+          }]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleLogout = async () => {
@@ -201,6 +242,8 @@ export default function App() {
                    { id: 'home', label: 'ዋና ገጽ', icon: Home },
                    { id: 'chat', label: 'ረዳት ጋር ያውሩ', icon: MessageSquare },
                    { id: 'docs', label: 'ሰነድ አዘጋጅ', icon: FileEdit },
+                   { id: 'tools', label: 'የህግ መሣሪያዎች', icon: Scale },
+                   { id: 'market', label: 'ጠበቃ ይፈልጉ', icon: Briefcase },
                    { id: 'profile', label: 'የግል ማህደር', icon: User },
                    ...(userRole === 'admin' ? [{ id: 'admin', label: 'አስተዳዳሪ ፓነል', icon: Shield }] : [])
                  ].map(item => (
@@ -317,6 +360,8 @@ export default function App() {
                   {activeTab === 'home' ? 'እንኳን ደህና መጡ' :
                    activeTab === 'chat' ? 'የህግ ረዳት' : 
                    activeTab === 'docs' ? 'ሰነድ አዘጋጅ' : 
+                   activeTab === 'tools' ? 'የህግ መሣሪያዎች' :
+                   activeTab === 'market' ? 'የጠበቆች ገበያ' :
                    activeTab === 'admin' ? 'የአስተዳዳሪ ፓነል' : 'የግል ማህደር'}
                </span>
             </div>
@@ -368,6 +413,24 @@ export default function App() {
                     color: 'text-emerald-500',
                     bg: 'bg-emerald-500/10',
                     delay: 0.3
+                  },
+                  {
+                    id: 'tools',
+                    title: 'የላቁ መሣሪያዎች',
+                    desc: 'የውል ስጋት ትንተና፣ የውሳኔ ግምት እና የ HR ፖሊሲ ማዘጋጃ።',
+                    icon: Scale,
+                    color: 'text-rose-500',
+                    bg: 'bg-rose-500/10',
+                    delay: 0.4
+                  },
+                  {
+                    id: 'market',
+                    title: 'የጠበቆች ገበያ',
+                    desc: 'ታማኝ እና ልምድ ካላቸው ጠበቆች ጋር ቀጠሮ ይያዙ።',
+                    icon: Briefcase,
+                    color: 'text-amber-500',
+                    bg: 'bg-amber-500/10',
+                    delay: 0.5
                   },
                   {
                     id: 'profile',
@@ -490,8 +553,39 @@ export default function App() {
 
             {/* Input Area */}
             <div className="px-10 pb-10 flex-shrink-0 relative z-20">
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-4xl mx-auto space-y-4">
+                {attachedFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2 px-2">
+                    {attachedFiles.map((file, i) => (
+                      <div key={i} className="glass pl-3 pr-1 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 group">
+                        {file.type.startsWith('image/') ? <ImageIcon size={12} className="text-primary" /> : <FileText size={12} className="text-blue-400" />}
+                        <span className="text-[10px] font-bold text-slate-300 max-w-[80px] truncate">{file.name}</span>
+                        <button 
+                          onClick={() => removeFile(i)}
+                          className="p-1 hover:bg-red-500/20 text-slate-500 hover:text-red-400 rounded-lg transition-all"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
                 <div className="glass rounded-[24px] p-2 flex items-center gap-4 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary/40 transition-all shadow-2xl">
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all"
+                  >
+                    <Paperclip size={20} />
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    multiple 
+                    onChange={handleFileChange}
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
                   <input
                     type="text"
                     value={input}
@@ -502,10 +596,10 @@ export default function App() {
                   />
                   <button
                     onClick={handleSend}
-                    disabled={!input.trim() || isLoading}
+                    disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
                     className={`
                       w-12 h-12 flex items-center justify-center rounded-2xl transition-all
-                      ${input.trim() && !isLoading 
+                      ${(input.trim() || attachedFiles.length > 0) && !isLoading 
                         ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:scale-110 active:scale-95' 
                         : 'bg-white/5 text-slate-600 cursor-not-allowed'}
                     `}
@@ -522,6 +616,14 @@ export default function App() {
         ) : activeTab === 'docs' ? (
           <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
             <DocumentCreator />
+          </div>
+        ) : activeTab === 'tools' ? (
+          <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
+            <LegalTools />
+          </div>
+        ) : activeTab === 'market' ? (
+          <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
+            <LawyerMarketplace userId={currentUser.uid} />
           </div>
         ) : activeTab === 'admin' ? (
           <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">

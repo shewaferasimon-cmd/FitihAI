@@ -8,12 +8,47 @@
         "uid": { "type": "string", "description": "Firebase Auth unique ID" },
         "phoneNumber": { "type": "string", "description": "Verified +251 phone number" },
         "displayName": { "type": "string", "description": "Optional name of the user" },
-        "role": { "type": "string", "enum": ["user", "admin"], "description": "Access level" },
+        "role": { "type": "string", "enum": ["user", "admin", "lawyer"], "description": "Access level" },
         "isSubscribed": { "type": "boolean", "description": "Subscription status" },
         "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" },
         "lastLogin": { "type": "string", "format": "date-time", "description": "Last login timestamp" }
       },
       "required": ["uid", "phoneNumber", "role", "isSubscribed"]
+    },
+    "LawyerProfile": {
+      "title": "LawyerProfile",
+      "description": "Public profile for practicing lawyers",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "specialization": { "type": "string" },
+        "experience": { "type": "number", "description": "Years of experience" },
+        "bio": { "type": "string" },
+        "licenseNumber": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "hourlyRate": { "type": "number" },
+        "availability": { "type": "object" },
+        "badge": { "type": "string", "enum": ["Expert", "Pro", "Verified"] }
+      },
+      "required": ["uid", "displayName", "specialization", "licenseNumber"]
+    },
+    "Consultation": {
+      "title": "Consultation",
+      "description": "Booked legal consultation sessions",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "lawyerId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"] },
+        "date": { "type": "string", "format": "date-time" },
+        "topic": { "type": "string" },
+        "price": { "type": "number" },
+        "meetingLink": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "lawyerId", "status", "date"]
     },
     "UserDocument": {
       "title": "UserDocument",
@@ -46,6 +81,14 @@
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User private profile documents"
+    },
+    "/lawyers/{lawyerId}": {
+      "schema": "LawyerProfile",
+      "description": "Public profiles of registered lawyers"
+    },
+    "/consultations/{consultationId}": {
+      "schema": "Consultation",
+      "description": "Legal consultation bookings"
     },
     "/documents/{docId}": {
       "schema": "UserDocument",

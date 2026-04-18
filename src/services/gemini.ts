@@ -37,10 +37,57 @@ Guidelines:
    - CRITICAL: Do NOT use markdown like # or **. Use capital letters or numbering for titles.
 `;
 
+export const TOOLS_INSTRUCTION = `
+You are an Advanced Ethiopian Legal Analytics AI. You have specialized tools for:
+1. CONTRACT RISK ANALYZER: Identify risky clauses, missing protections, and potential loopholes in contracts according to Ethiopian law.
+2. CASE OUTCOME PREDICTOR: Based on legal facts and Ethiopian precedent/Civil/Criminal Code, predict the most likely legal outcome.
+3. HR POLICY GENERATOR: Generate HR policies (Employee Handbooks, Leave Policies, etc.) based on the 2019 Labor Proclamation (አዋጅ ቁጥር 1156/2011).
+4. PROCEDURAL GUIDE: Provide step-by-step instructions for administrative tasks like Business Permits, Tax registration, Lease renewals, etc.
+5. COURT PROCESS EXPLAINER: Guide through the stages of Ethiopian court (Statement of Claim -> Summons -> Defense -> Trial -> Judgment -> Execution).
+
+Guidelines:
+- Always respond in Professional Amharic.
+- Be objective and point to specific laws (e.g., Labor Proclamation, Civil Code).
+- Always include a legal disclaimer.
+`;
+
+export async function useLegalTool(toolType: string, inputData: string, files?: {type: string, base64?: string}[]) {
+  try {
+    const contents: any[] = [{ role: 'user', parts: [{ text: `Tool: ${toolType}\nInput: ${inputData}` }] }];
+    
+    // Add multimodal files if available (primarily images for Gemini vision)
+    if (files && files.length > 0) {
+      files.forEach(file => {
+        if (file.base64 && file.type.startsWith('image/')) {
+          contents[0].parts.push({
+            inlineData: {
+              data: file.base64,
+              mimeType: file.type
+            }
+          });
+        }
+      });
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: contents,
+      config: {
+        systemInstruction: TOOLS_INSTRUCTION,
+        temperature: 0.1,
+      },
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Legal Tool AI error:", error);
+    throw error;
+  }
+}
+
 export async function chatWithAI(messages: any[]) {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash-exp", // Use modern flash for better multimodal/speed
       contents: messages,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
