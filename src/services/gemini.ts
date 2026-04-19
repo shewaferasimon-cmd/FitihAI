@@ -1,6 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const SYSTEM_INSTRUCTION = `
 You are the "FitihAI Legal Assistant" (ፍትህ አይ - የኢትዮጵያ የሕግ ረዳት). 
@@ -53,31 +50,13 @@ Guidelines:
 
 export async function useLegalTool(toolType: string, inputData: string, files?: {type: string, base64?: string}[]) {
   try {
-    const contents: any[] = [{ role: 'user', parts: [{ text: `Tool: ${toolType}\nInput: ${inputData}` }] }];
-    
-    // Add multimodal files if available (primarily images for Gemini vision)
-    if (files && files.length > 0) {
-      files.forEach(file => {
-        if (file.base64 && file.type.startsWith('image/')) {
-          contents[0].parts.push({
-            inlineData: {
-              data: file.base64,
-              mimeType: file.type
-            }
-          });
-        }
-      });
-    }
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
-      contents: contents,
-      config: {
-        systemInstruction: TOOLS_INSTRUCTION,
-        temperature: 0.1,
-      },
+    const response = await fetch('/api/ai/tool', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toolType, inputData, files, systemInstruction: TOOLS_INSTRUCTION })
     });
-    return response.text;
+    const data = await response.json();
+    return data.text;
   } catch (error) {
     console.error("Legal Tool AI error:", error);
     throw error;
@@ -86,15 +65,13 @@ export async function useLegalTool(toolType: string, inputData: string, files?: 
 
 export async function chatWithAI(messages: any[]) {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp", // Use modern flash for better multimodal/speed
-      contents: messages,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.7,
-      },
+    const response = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, systemInstruction: SYSTEM_INSTRUCTION })
     });
-    return response.text;
+    const data = await response.json();
+    return data.text;
   } catch (error) {
     console.error("AI Chat error:", error);
     throw error;
@@ -103,16 +80,13 @@ export async function chatWithAI(messages: any[]) {
 
 export async function generateDocumentContent(docType: string, details: any) {
   try {
-    const prompt = `Document Type: ${docType}\nDetails: ${JSON.stringify(details)}`;
-    const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
-      contents: prompt,
-      config: {
-        systemInstruction: DOCUMENT_INSTRUCTION,
-        temperature: 0.3,
-      },
+    const response = await fetch('/api/ai/document', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ docType, details, systemInstruction: DOCUMENT_INSTRUCTION })
     });
-    return response.text;
+    const data = await response.json();
+    return data.text;
   } catch (error) {
     console.error("Document AI error:", error);
     throw error;

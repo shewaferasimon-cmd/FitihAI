@@ -1,8 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
-  RecaptchaVerifier, 
-  signInWithPhoneNumber, 
   onAuthStateChanged, 
   signOut, 
   User,
@@ -32,6 +30,30 @@ export const signInEmail = async (email: string, pass: string) => {
     return result.user;
   } catch (error) {
     console.error('Email Sign In Error:', error);
+    throw error;
+  }
+};
+
+// Phone + Password (Virtual Email) Auth
+export const signInPhonePassword = async (phone: string, pass: string) => {
+  try {
+    // Generate a secure virtual email from the phone number
+    const virtualEmail = `${phone.replace(/\D/g, '')}@fitih.ai`;
+    const result = await signInWithEmailAndPassword(auth, virtualEmail, pass);
+    return result.user;
+  } catch (error) {
+    console.error('Phone+Pass Sign In Error:', error);
+    throw error;
+  }
+};
+
+export const signUpPhonePassword = async (phone: string, pass: string) => {
+  try {
+    const virtualEmail = `${phone.replace(/\D/g, '')}@fitih.ai`;
+    const result = await createUserWithEmailAndPassword(auth, virtualEmail, pass);
+    return result.user;
+  } catch (error) {
+    console.error('Phone+Pass Sign Up Error:', error);
     throw error;
   }
 };
@@ -66,48 +88,6 @@ async function testConnection() {
   }
 }
 testConnection();
-
-// SMS OTP Verification Pattern for Ethiopia (+251)
-export const setupRecaptcha = (containerId: string) => {
-  if (!(window as any).recaptchaVerifier) {
-    (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-      size: 'invisible',
-      callback: () => {
-        // reCAPTCHA solved
-      }
-    });
-  }
-  return (window as any).recaptchaVerifier;
-};
-
-export const clearRecaptcha = () => {
-  if ((window as any).recaptchaVerifier) {
-    try {
-      (window as any).recaptchaVerifier.clear();
-      delete (window as any).recaptchaVerifier;
-    } catch (e) {
-      console.error('Error clearing recaptcha:', e);
-    }
-  }
-};
-
-export const sendOTP = async (phoneNumber: string, appVerifier: any) => {
-  // Ensure number is in E.164 format
-  let formattedNumber = phoneNumber;
-  if (phoneNumber.startsWith('0')) {
-    formattedNumber = '+251' + phoneNumber.substring(1);
-  } else if (!phoneNumber.startsWith('+')) {
-    formattedNumber = '+251' + phoneNumber;
-  }
-  
-  try {
-    const confirmationResult = await signInWithPhoneNumber(auth, formattedNumber, appVerifier);
-    return confirmationResult;
-  } catch (error) {
-    console.error('Error sending OTP:', error);
-    throw error;
-  }
-};
 
 // Firestore Error Handling utility
 export enum OperationType {

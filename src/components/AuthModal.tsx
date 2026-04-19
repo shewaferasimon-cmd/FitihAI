@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Phone, Lock, ChevronRight, Scale, Loader2, AlertCircle } from 'lucide-react';
 import { Mail, Github, Chrome, Eye, EyeOff } from 'lucide-react';
-import { setupRecaptcha, sendOTP, syncUserProfile, auth, clearRecaptcha, signInWithGoogle, signInEmail, signUpEmail } from '../services/firebase';
+import { syncUserProfile, auth, signInWithGoogle, signInEmail, signUpEmail, signInPhonePassword, signUpPhonePassword } from '../services/firebase';
 
 interface AuthModalProps {
   onSuccess: () => void;
@@ -17,11 +17,10 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
   const [age, setAge] = useState('');
   const [occupation, setOccupation] = useState('');
   const [address, setAddress] = useState('');
-  const [step, setStep] = useState<'phone' | 'otp' | 'details' | 'lawyer_details'>('phone');
+  const [step, setStep] = useState<'phone' | 'details' | 'lawyer_details'>('phone');
   const [mode, setMode] = useState<'signin' | 'signup' | 'lawyer_signup'>('signin');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<React.ReactNode | null>(null);
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
   
   // Email Auth State
   const [useEmail, setUseEmail] = useState(false);
@@ -41,29 +40,13 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
     }
   }, [mode, step]);
 
-  useEffect(() => {
-    // Hidden div for ReCAPTCHA
-    setupRecaptcha('recaptcha-container');
-
-    return () => {
-      clearRecaptcha();
-    };
-  }, []);
-
-  const handleSendOTP = async () => {
-    if (!phoneNumber) return;
-    
-    // Test Signup Bypass for 0933333333
-    // This allows testing the new expanded form without needing real SMS billing
+  const handleTestBypass = async () => {
     if (phoneNumber === '0933333333' || phoneNumber === '+251933333333') {
       setIsLoading(true);
       setError(null);
       try {
-        // We use anonymous auth to get a real UID so handleSaveDetails works
         const { signInAnonymously } = await import('firebase/auth');
         await signInAnonymously(auth);
-        
-        // Go to the expanded sign-up form instead of bypassing it
         setMode('signup');
         setStep('details');
       } catch (err) {
@@ -71,96 +54,57 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
       } finally {
         setIsLoading(false);
       }
-      return;
+      return true;
     }
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await sendOTP(phoneNumber, (window as any).recaptchaVerifier);
-      setConfirmationResult(result);
-      setStep('otp');
-    } catch (err: any) {
-      setError(mapErrorMessage(err));
-    } finally {
-      setIsLoading(false);
-    }
+    return false;
   };
 
-  const handleVerifyOTP = async () => {
-    if (!otp || !confirmationResult) return;
+  const handlePhonePasswordAuth = async () => {
+    if (!phoneNumber) return;
+    
+    // Check for test bypass first
+    const isBypass = await handleTestBypass();
+    if (isBypass) return;
+
+    if (!password) return;
     setIsLoading(true);
     setError(null);
     try {
-      const result = await confirmationResult.confirm(otp);
-      if (result.user) {
-        // If signing up, go to details. If signing in, just sync.
-        if (mode === 'signup') {
-          setStep('details');
-        } else if (mode === 'lawyer_signup') {
-          setStep('lawyer_details');
-        } else {
-          await syncUserProfile(result.user);
-          onSuccess();
-        }
+      let user;
+      if (mode === 'signin') {
+        user = await signInPhonePassword(phoneNumber, password);
+      } else {
+        user = await signUpPhonePassword(phoneNumber, password);
+      }
+      
+      if (mode === 'signup' || mode === 'lawyer_signup') {
+        setStep(mode === 'lawyer_signup' ? 'lawyer_details' : 'details');
+      } else {
+        await syncUserProfile(user);
+        onSuccess();
       }
     } catch (err: any) {
-      setError('ትክክለኛ ያልሆነ ኮድ። እባክዎን እንደገና ይሞክሩ።');
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError('የተሳሳተ ስልክ ቁጥር ወይም የይለፍ ቃል ነው።');
+      } else if (err.code === 'auth/email-already-in-use') {
+        setError('ይህ ስልክ ቁጥር ቀድሞውኑ ተመዝግቧል። እባክዎ ይግቡ።');
+      } else {
+        setError('መግባት አልተቻለም። እባክዎን እንደገና ይሞክሩ።');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const mapErrorMessage = (err: any) => {
-    const message = err.message || '';
-    if (message.includes('billing-not-enabled') || message.includes('internal-error')) {
-      return (
-        <div className="space-y-4">
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-            <p className="text-amber-200 text-xs">እውነተኛ SMS ለመላክ የFirebase Billing (Blaze Plan) ያስፈልጋል።</p>
-          </div>
-          <div className="space-y-2">
-            <p className="text-primary text-[10px] font-black uppercase tracking-widest">ለሙከራ ያህል እነዚህን ቁጥሮች ይጠቀሙ (Demo Logs):</p>
-            <div className="grid grid-cols-1 gap-2">
-              <button 
-                onClick={() => { setPhoneNumber('0900000000'); setMode('signin'); setStep('phone'); setError(null); }}
-                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all group"
-              >
-                <div className="text-left">
-                  <p className="text-white text-xs font-bold">🛠 Admin Account</p>
-                  <p className="text-[9px] text-slate-500 font-medium">0900000000 (PIN: 123456)</p>
-                </div>
-                <ChevronRight size={14} className="text-slate-700 group-hover:text-primary transition-colors" />
-              </button>
-              <button 
-                onClick={() => { setPhoneNumber('0911111111'); setMode('signin'); setStep('phone'); setError(null); }}
-                className="flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all group"
-              >
-                <div className="text-left">
-                  <p className="text-white text-xs font-bold">⭐ Premium User</p>
-                  <p className="text-[9px] text-slate-500 font-medium">0911111111 (PIN: 123456)</p>
-                </div>
-                <ChevronRight size={14} className="text-slate-700 group-hover:text-primary transition-colors" />
-              </button>
-              <button 
-                onClick={() => { setPhoneNumber('0933333333'); setMode('signup'); setStep('phone'); setError(null); }}
-                className="flex items-center justify-between px-4 py-3 bg-primary/10 hover:bg-primary/20 rounded-xl transition-all group border border-primary/20"
-              >
-                <div className="text-left">
-                  <p className="text-primary-light text-xs font-bold">✨ Test Sign-Up (New User)</p>
-                  <p className="text-[9px] text-slate-500 font-medium">0933333333 (PIN: 123456)</p>
-                </div>
-                <ChevronRight size={14} className="text-primary/40 group-hover:text-primary transition-colors" />
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+    const code = err.code || '';
+    if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+      return 'የተሳሳተ ስልክ ቁጥር ወይም የይለፍ ቃል ነው።';
     }
-    if (message.includes('too-many-requests')) {
-      return 'በጣም ብዙ ሙከራዎች ተደርገዋል። እባክዎን ከጥቂት ደቂቃዎች በኋላ ይሞክሩ።';
+    if (code === 'auth/email-already-in-use') {
+      return 'ይህ ስልክ ቁጥር ቀድሞውኑ ተመዝግቧል። እባክዎ ይግቡ።';
     }
-    return 'ስህተት ተከስቷል። እባክዎን ቁጥርዎን ያረጋግጡ ወይም የሙከራ ቁጥሮችን ይጠቀሙ።';
+    return 'ስህተት ተከስቷል። እባክዎን እንደገና ይሞክሩ።';
   };
 
   const handleGoogleAuth = async () => {
@@ -269,14 +213,12 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
               {step === 'phone' ? (mode === 'signin' ? 'እንኳን ደህና መጡ' : mode === 'signup' ? 'ይመዝገቡ (Sign Up)' : 'ጠበቃ ሆነው ይመዝገቡ') : 
-               step === 'otp' ? 'ኮድ ያስገቡ' : 'የግል መረጃ'}
+               'የግል መረጃ'}
             </h2>
             <p className="text-slate-400 text-sm font-medium">
               {step === 'phone' 
-                ? 'በኢትዮጵያ ስልክ ቁጥርዎ ይግቡ' 
-                : step === 'otp' 
-                  ? `${phoneNumber} ላይ የተላከውን 6 አሃዝ ኮድ ያስገቡ`
-                  : mode === 'lawyer_signup' ? 'የጠበቃነት መረጃዎን ያስገቡ' : 'ለመቀጠል ስምዎን እና አድራሻዎን ያስገቡ'}
+                ? 'በስልክ ቁጥርዎ እና በሚስጥር ቁጥርዎ ይግቡ' 
+                : mode === 'lawyer_signup' ? 'የጠበቃነት መረጃዎን ያስገቡ' : 'ለመቀጠል ስምዎን እና አድራሻዎን ያስገቡ'}
             </p>
           </div>
 
@@ -299,20 +241,44 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                 </div>
 
                 {!useEmail ? (
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ስልክ ቁጥር (Phone Number)</label>
-                    <div className="relative group">
-                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors">
-                        <Phone size={18} />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ስልክ ቁጥር (Phone Number)</label>
+                      <div className="relative group">
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors">
+                          <Phone size={18} />
+                        </div>
+                        <input
+                          type="tel"
+                          placeholder="0912..."
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          className="w-full bg-navy/80 border border-white/5 rounded-2xl pl-14 pr-6 py-5 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold text-lg"
+                        />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-600">+251</div>
                       </div>
-                      <input
-                        type="tel"
-                        placeholder="0912..."
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="w-full bg-navy/80 border border-white/5 rounded-2xl pl-14 pr-6 py-5 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold text-lg"
-                      />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-600">+251</div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">የይለፍ ቃል (Password)</label>
+                      <div className="relative group">
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors">
+                          <Lock size={18} />
+                        </div>
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="********"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full bg-navy/80 border border-white/5 rounded-2xl pl-14 pr-12 py-5 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
+                        />
+                        <button 
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -375,23 +341,6 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                   >
                     ጠበቃ
                   </button>
-                </div>
-              </div>
-            ) : step === 'otp' ? (
-              <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">የማረጋገጫ ኮድ (Verification Code)</label>
-                <div className="relative group">
-                  <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors">
-                    <Lock size={18} />
-                  </div>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    placeholder="000000"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    className="w-full bg-navy/80 border border-white/5 rounded-2xl pl-14 pr-6 py-5 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 tracking-[1em] font-black text-2xl text-center"
-                  />
                 </div>
               </div>
             ) : step === 'lawyer_details' ? (
@@ -550,22 +499,22 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
             )}
 
             <button
-              onClick={step === 'phone' ? (useEmail ? handleEmailAuth : handleSendOTP) : step === 'otp' ? handleVerifyOTP : handleSaveDetails}
-              disabled={isLoading || (step === 'phone' ? (useEmail ? (!email || !password) : !phoneNumber) : step === 'otp' ? otp.length < 6 : step === 'lawyer_details' ? (!firstName || !lastName || !specialization || !licenseNumber || !address) : (!firstName || !lastName || !address))}
-              className={`w-full py-6 rounded-3xl font-black text-sm flex items-center justify-center gap-3 transition-all
-                ${isLoading || (step === 'phone' ? (useEmail ? (!email || !password) : !phoneNumber) : step === 'otp' ? otp.length < 6 : step === 'lawyer_details' ? (!firstName || !lastName || !specialization || !licenseNumber || !address) : (!firstName || !lastName || !address))
-                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                  : 'bg-primary text-white shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95'}
-              `}
+               onClick={step === 'phone' ? (useEmail ? handleEmailAuth : handlePhonePasswordAuth) : handleSaveDetails}
+               disabled={isLoading || (step === 'phone' ? (useEmail ? (!email || !password) : (!phoneNumber || !password)) : step === 'lawyer_details' ? (!firstName || !lastName || !specialization || !licenseNumber || !address) : (!firstName || !lastName || !address))}
+               className={`w-full py-6 rounded-3xl font-black text-sm flex items-center justify-center gap-3 transition-all
+                 ${isLoading || (step === 'phone' ? (useEmail ? (!email || !password) : (!phoneNumber || !password)) : step === 'lawyer_details' ? (!firstName || !lastName || !specialization || !licenseNumber || !address) : (!firstName || !lastName || !address))
+                   ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                   : 'bg-primary text-white shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95'}
+               `}
             >
-              {isLoading ? (
-                <Loader2 className="animate-spin" size={20} />
-              ) : (
-                <>
-                  {step === 'phone' ? 'ይቀጥሉ (Continue)' : step === 'otp' ? 'አረጋግጥ (Verify)' : 'ጨርስ (Finish)'}
-                  <ChevronRight size={18} />
-                </>
-              )}
+               {isLoading ? (
+                 <Loader2 className="animate-spin" size={20} />
+               ) : (
+                 <>
+                   {step === 'phone' ? 'ይቀጥሉ (Continue)' : 'ጨርስ (Finish)'}
+                   <ChevronRight size={18} />
+                 </>
+               )}
             </button>
 
             {step === 'phone' && (
@@ -588,15 +537,6 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
               </div>
             )}
 
-            {step === 'otp' && (
-              <button 
-                onClick={() => setStep('phone')}
-                className="w-full text-center text-xs font-bold text-slate-500 hover:text-white transition-colors py-2"
-              >
-                ቁጥር ለመቀየር ተመለስ (Change Number)
-              </button>
-            )}
-
             <AnimatePresence>
               {error && (
                 <motion.div 
@@ -611,8 +551,6 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
               )}
             </AnimatePresence>
           </div>
-          
-          <div id="recaptcha-container" className="mt-4 flex justify-center"></div>
           
           <p className="text-[10px] text-center text-slate-600 mt-8 font-bold uppercase tracking-widest leading-loose">
             ይህንን በመጠቀም በእኛ የአገልግሎት ውል እና የግላዊነት <br/> መመሪያ ተስማምተዋል።
