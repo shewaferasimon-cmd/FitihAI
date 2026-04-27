@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Phone, Lock, ChevronRight, Scale, Loader2, AlertCircle } from 'lucide-react';
-import { Mail, Github, Chrome, Eye, EyeOff } from 'lucide-react';
+import { Phone, Lock, ChevronRight, Scale, Loader2, AlertCircle, Mail, Github, Chrome, Eye, EyeOff } from 'lucide-react';
 import { syncUserProfile, auth, signInWithGoogle, signInEmail, signUpEmail, signInPhonePassword, signUpPhonePassword } from '../services/firebase';
 
 interface AuthModalProps {
@@ -10,7 +9,6 @@ interface AuthModalProps {
 
 export default function AuthModal({ onSuccess }: AuthModalProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [gender, setGender] = useState('');
@@ -21,6 +19,8 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'lawyer_signup'>('signin');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<React.ReactNode | null>(null);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   
   // Email Auth State
   const [useEmail, setUseEmail] = useState(false);
@@ -33,40 +33,13 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
   const [licenseNumber, setLicenseNumber] = useState('');
 
   useEffect(() => {
-    // If we have a user but we are still on the phone step, it means we need to collect details
-    // This happens after Google/Email signup or the test bypass
     if (auth.currentUser && step === 'phone') {
       setStep(mode === 'lawyer_signup' ? 'lawyer_details' : 'details');
     }
   }, [mode, step]);
 
-  const handleTestBypass = async () => {
-    if (phoneNumber === '0933333333' || phoneNumber === '+251933333333') {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const { signInAnonymously } = await import('firebase/auth');
-        await signInAnonymously(auth);
-        setMode('signup');
-        setStep('details');
-      } catch (err) {
-        setError('የሙከራ ምዝገባ መጀመር አልተቻለም።');
-      } finally {
-        setIsLoading(false);
-      }
-      return true;
-    }
-    return false;
-  };
-
   const handlePhonePasswordAuth = async () => {
-    if (!phoneNumber) return;
-    
-    // Check for test bypass first
-    const isBypass = await handleTestBypass();
-    if (isBypass) return;
-
-    if (!password) return;
+    if (!phoneNumber || !password) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -80,7 +53,8 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
       if (mode === 'signup' || mode === 'lawyer_signup') {
         setStep(mode === 'lawyer_signup' ? 'lawyer_details' : 'details');
       } else {
-        await syncUserProfile(user);
+        // Pass the phoneNumber explicitly so syncUserProfile can detect the admin role
+        await syncUserProfile(user, { phoneNumber: phoneNumber });
         onSuccess();
       }
     } catch (err: any) {
@@ -94,17 +68,6 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const mapErrorMessage = (err: any) => {
-    const code = err.code || '';
-    if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-      return 'የተሳሳተ ስልክ ቁጥር ወይም የይለፍ ቃል ነው።';
-    }
-    if (code === 'auth/email-already-in-use') {
-      return 'ይህ ስልክ ቁጥር ቀድሞውኑ ተመዝግቧል። እባክዎ ይግቡ።';
-    }
-    return 'ስህተት ተከስቷል። እባክዎን እንደገና ይሞክሩ።';
   };
 
   const handleGoogleAuth = async () => {
@@ -140,7 +103,7 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
         onSuccess();
       }
     } catch (err: any) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('የተሳሳተ ኢሜይል ወይም የይለፍ ቃል ነው።');
       } else if (err.code === 'auth/email-already-in-use') {
         setError('ይህ ኢሜይል ቀድሞውኑ ስራ ላይ ውሏል።');
@@ -165,8 +128,7 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
           age: parseInt(age) || 0,
           occupation,
           address,
-          // Add phone number for anonymous users who are using the test bypass
-          phoneNumber: auth.currentUser.isAnonymous ? (phoneNumber.startsWith('+') ? phoneNumber : `+251${phoneNumber.replace(/^0/, '')}`) : auth.currentUser.phoneNumber
+          phoneNumber: auth.currentUser.phoneNumber || phoneNumber || '0000000000'
         };
 
         if (mode === 'lawyer_signup') {
@@ -188,18 +150,127 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
     }
   };
 
+  const onboardingCards = [
+    {
+      title: 'እንኳን ወደ ፍትህ AI በደህና መጡ',
+      description: 'የኢትዮጵያ የመጀመሪያው በAI የታገዘ የህግ ረዳት። በህግ ጉዳዮች ላይ ፈጣን እና ትክክለኛ መረጃ ያግኙ።',
+      icon: <Scale size={60} className="text-primary" />,
+      color: 'bg-primary/10'
+    },
+    {
+      title: 'የህግ ረዳት (AI Chat)',
+      description: 'ለማንኛውም የህግ ጥያቄዎችዎ በ AI የታገዘ ፈጣን ምላሽ ያግኙ። እንደ የቤት ኪራይ፣ የንግድ ህግ እና ሌሎች።',
+      icon: <Phone size={60} className="text-blue-500" />,
+      color: 'bg-blue-500/10'
+    },
+    {
+      title: 'ሰነድ አዘጋጅ (Docs)',
+      description: 'ውሎች፣ የሰራተኛ ቅጥር ስምምነቶች እና ሌሎች የህግ ሰነዶችን በደቂቃዎች ውስጥ በጥራት ያዘጋጁ።',
+      icon: <Lock size={60} className="text-emerald-500" />,
+      color: 'bg-emerald-500/10'
+    },
+    {
+      title: 'የህግ መተንተኛ እና ገበያ',
+      description: 'የተለያዩ የህግ ሰነዶችን ለመተንተን እና ታማኝ ጠበቃዎችን በቀላሉ ለመፈለግ ይጠቀሙበት።',
+      icon: <Scale size={60} className="text-purple-500" />,
+      color: 'bg-purple-500/10'
+    },
+    {
+      title: 'ጥንቃቄ እና ውል',
+      description: 'ፍትህ AI በአርቴፊሻል ኢንተለጀንስ የሚሰራ ስለሆነ ስህተቶች ሊኖሩ ይችላሉ። ይህንን አገልግሎት በመጠቀም በአገልግሎት ውላችን ተስማምተዋል።',
+      icon: <AlertCircle size={60} className="text-rose-500" />,
+      color: 'bg-rose-500/10'
+    }
+  ];
+
+  if (showOnboarding) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8 bg-bg-main/60 backdrop-blur-sm">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 bg-bg-main/90" />
+        
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="relative w-full max-w-md glass rounded-[40px] p-10 shadow-2xl border border-border-main overflow-hidden text-center"
+        >
+          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-primary/20 rounded-full blur-[80px] pointer-events-none" />
+          
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={onboardingStep}
+              initial={{ x: 50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -50, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="relative z-10 flex flex-col items-center"
+            >
+              <div className={`w-32 h-32 rounded-[40px] ${onboardingCards[onboardingStep].color} flex items-center justify-center mb-8 border border-white/5`}>
+                {onboardingCards[onboardingStep].icon}
+              </div>
+              <h2 className="text-2xl font-black text-text-header mb-4 tracking-tight leading-tight">
+                {onboardingCards[onboardingStep].title}
+              </h2>
+              <p className="text-text-muted text-base font-bold leading-relaxed px-2">
+                {onboardingCards[onboardingStep].description}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="mt-12 space-y-6 relative z-10">
+            <div className="flex justify-center gap-2">
+              {onboardingCards.map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`h-1.5 rounded-full transition-all duration-300 ${i === onboardingStep ? 'w-8 bg-primary' : 'w-2 bg-text-muted/20'}`}
+                />
+              ))}
+            </div>
+
+            <div className="flex gap-4">
+              {onboardingStep < onboardingCards.length - 1 ? (
+                <>
+                  <button 
+                    onClick={() => setShowOnboarding(false)}
+                    className="flex-1 py-4 text-sm font-black text-text-muted uppercase tracking-widest hover:text-text-header transition-colors"
+                  >
+                    Skip
+                  </button>
+                  <button 
+                    onClick={() => setOnboardingStep(prev => prev + 1)}
+                    className="flex-[2] py-4 bg-primary text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                  >
+                    Next
+                    <ChevronRight size={18} />
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => setShowOnboarding(false)}
+                  className="w-full py-5 bg-primary text-white rounded-3xl font-black text-sm flex items-center justify-center gap-2 shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  አሁን እንጀምር (Get Started)
+                  <ChevronRight size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-0">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-8 overflow-y-auto custom-scrollbar bg-bg-main/60 backdrop-blur-sm">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="absolute inset-0 bg-midnight/90 backdrop-blur-xl"
+        className="fixed inset-0 bg-bg-main/40 pointer-events-none"
       />
       
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="relative w-full max-w-md glass rounded-[40px] p-10 overflow-hidden"
+        className="relative w-full max-w-md glass rounded-[40px] p-8 sm:p-10 my-16 shadow-2xl border border-border-main overflow-hidden flex-shrink-0"
       >
         <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-primary/20 rounded-full blur-[80px] pointer-events-none" />
         
@@ -211,13 +282,15 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
           </div>
 
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
-              {step === 'phone' ? (mode === 'signin' ? 'እንኳን ደህና መጡ' : mode === 'signup' ? 'ይመዝገቡ (Sign Up)' : 'ጠበቃ ሆነው ይመዝገቡ') : 
-               'የግል መረጃ'}
+            <h2 className="text-3xl font-black text-text-header mb-2 tracking-tight">
+              {step === 'phone' ? (
+                mode === 'signin' ? 'እንኳን ደህና መጡ! (Welcome Back)' : 
+                mode === 'signup' ? 'አዲስ አካውንት (Create Account)' : 'የጠበቃ ምዝገባ'
+              ) : 'የግል መረጃ'}
             </h2>
-            <p className="text-slate-400 text-sm font-medium">
+            <p className="text-text-muted text-sm font-medium">
               {step === 'phone' 
-                ? 'በስልክ ቁጥርዎ እና በሚስጥር ቁጥርዎ ይግቡ' 
+                ? (mode === 'signin' ? 'ወደ አካውንትዎ ለመግባት መረጃዎን ያስገቡ' : 'መለያ ለመክፈት መረጃዎን ያስገቡ') 
                 : mode === 'lawyer_signup' ? 'የጠበቃነት መረጃዎን ያስገቡ' : 'ለመቀጠል ስምዎን እና አድራሻዎን ያስገቡ'}
             </p>
           </div>
@@ -225,16 +298,37 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
           <div className="space-y-6">
             {step === 'phone' ? (
               <div className="space-y-6">
-                <div className="flex gap-4 p-1 bg-navy/50 rounded-2xl border border-white/5 mb-6">
+                <div className="flex gap-2 p-1.5 bg-bg-sidebar/50 rounded-[24px] border border-border-main mb-6">
+                  <button 
+                    onClick={() => setMode('signin')}
+                    className={`flex-1 text-[11px] font-black uppercase tracking-widest py-4 rounded-xl transition-all border ${mode === 'signin' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'text-text-muted border-transparent hover:bg-bg-glass hover:text-text-header'}`}
+                  >
+                    መግቢያ (Log In)
+                  </button>
+                  <button 
+                    onClick={() => setMode('signup')}
+                    className={`flex-1 text-[11px] font-black uppercase tracking-widest py-4 rounded-xl transition-all border ${mode === 'signup' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'text-text-muted border-transparent hover:bg-bg-glass hover:text-text-header'}`}
+                  >
+                    ምዝገባ (Sign Up)
+                  </button>
+                  <button 
+                    onClick={() => setMode('lawyer_signup')}
+                    className={`flex-1 text-[11px] font-black uppercase tracking-widest py-4 rounded-xl transition-all border ${mode === 'lawyer_signup' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'text-text-muted border-transparent hover:bg-bg-glass hover:text-text-header'}`}
+                  >
+                    ጠበቃ (Lawyer)
+                  </button>
+                </div>
+
+                <div className="flex gap-4 p-1 bg-bg-sidebar/50 rounded-2xl border border-border-main mb-6">
                   <button 
                     onClick={() => setUseEmail(false)}
-                    className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${!useEmail ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${!useEmail ? 'bg-primary/20 text-primary border border-primary/20' : 'text-text-muted hover:text-text-header'}`}
                   >
                     ቁጥር (Phone)
                   </button>
                   <button 
                     onClick={() => setUseEmail(true)}
-                    className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${useEmail ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${useEmail ? 'bg-primary/20 text-primary border border-primary/20' : 'text-text-muted hover:text-text-header'}`}
                   >
                     ኢሜይል (Email)
                   </button>
@@ -243,9 +337,9 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                 {!useEmail ? (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ስልክ ቁጥር (Phone Number)</label>
+                      <label className="block text-sm font-black text-text-muted uppercase tracking-widest mb-3 ml-1">ስልክ ቁጥር (Phone Number)</label>
                       <div className="relative group">
-                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors">
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors">
                           <Phone size={18} />
                         </div>
                         <input
@@ -253,16 +347,16 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                           placeholder="0912..."
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
-                          className="w-full bg-navy/80 border border-white/5 rounded-2xl pl-14 pr-6 py-5 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold text-lg"
+                          className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl pl-14 pr-16 py-5 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold text-lg"
                         />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-600">+251</div>
+                        <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted">+251</div>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">የይለፍ ቃል (Password)</label>
+                      <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">የይለፍ ቃል (Password)</label>
                       <div className="relative group">
-                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors">
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors">
                           <Lock size={18} />
                         </div>
                         <input
@@ -270,11 +364,11 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                           placeholder="********"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full bg-navy/80 border border-white/5 rounded-2xl pl-14 pr-12 py-5 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
+                          className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl pl-14 pr-12 py-5 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
                         />
                         <button 
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-header transition-colors"
                         >
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -284,9 +378,9 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                 ) : (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ኢሜይል (Email Address)</label>
+                      <label className="block text-sm font-black text-text-muted uppercase tracking-widest mb-3 ml-1">ኢሜይል (Email Address)</label>
                       <div className="relative group">
-                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors">
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors">
                           <Mail size={18} />
                         </div>
                         <input
@@ -294,14 +388,14 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                           placeholder="email@example.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="w-full bg-navy/80 border border-white/5 rounded-2xl pl-14 pr-6 py-5 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
+                          className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl pl-14 pr-6 py-5 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">የይለፍ ቃል (Password)</label>
+                      <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">የይለፍ ቃል (Password)</label>
                       <div className="relative group">
-                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors">
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors">
                           <Lock size={18} />
                         </div>
                         <input
@@ -309,11 +403,11 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                           placeholder="********"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full bg-navy/80 border border-white/5 rounded-2xl pl-14 pr-12 py-5 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
+                          className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl pl-14 pr-12 py-5 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
                         />
                         <button 
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-header transition-colors"
                         >
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -321,59 +415,38 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                     </div>
                   </div>
                 )}
-
-                <div className="mt-8 grid grid-cols-3 gap-2">
-                  <button 
-                    onClick={() => setMode('signin')}
-                    className={`text-[9px] font-black uppercase tracking-widest py-3 rounded-xl transition-all border ${mode === 'signin' ? 'bg-primary text-white border-primary' : 'text-slate-500 border-white/5 hover:text-white'}`}
-                  >
-                    መግቢያ
-                  </button>
-                  <button 
-                    onClick={() => setMode('signup')}
-                    className={`text-[9px] font-black uppercase tracking-widest py-3 rounded-xl transition-all border ${mode === 'signup' ? 'bg-primary text-white border-primary' : 'text-slate-500 border-white/5 hover:text-white'}`}
-                  >
-                    ተጠቃሚ
-                  </button>
-                  <button 
-                    onClick={() => setMode('lawyer_signup')}
-                    className={`text-[9px] font-black uppercase tracking-widest py-3 rounded-xl transition-all border ${mode === 'lawyer_signup' ? 'bg-primary text-white border-primary' : 'text-slate-500 border-white/5 hover:text-white'}`}
-                  >
-                    ጠበቃ
-                  </button>
-                </div>
               </div>
             ) : step === 'lawyer_details' ? (
-              <div className="space-y-4 max-h-[400px] overflow-y-auto px-1 custom-scrollbar">
+              <div className="space-y-4 max-h-[450px] overflow-y-auto px-1 custom-scrollbar pb-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ስም (First Name)</label>
+                    <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">ስም (First Name)</label>
                     <input
                       type="text"
                       placeholder="ስም..."
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white font-bold text-sm"
+                      className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header font-bold text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">የአያት ስም (Last Name)</label>
+                    <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">የአያት ስም (Last Name)</label>
                     <input
                       type="text"
                       placeholder="የአያት..."
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white font-bold text-sm"
+                      className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header font-bold text-sm"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ጾታ (Gender)</label>
+                    <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">ጾታ (Gender)</label>
                     <select 
                       value={gender}
                       onChange={(e) => setGender(e.target.value)}
-                      className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white font-bold text-sm"
+                      className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header font-bold text-sm"
                     >
                       <option value="">ይምረጡ...</option>
                       <option value="Male">ወንድ (Male)</option>
@@ -381,22 +454,22 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">እድሜ (Age)</label>
+                    <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">እድሜ (Age)</label>
                     <input
                       type="number"
                       placeholder="እድሜ..."
                       value={age}
                       onChange={(e) => setAge(e.target.value)}
-                      className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white font-bold text-sm"
+                      className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header font-bold text-sm"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ልዩ ሙያ (Specialization)</label>
+                  <label className="block text-sm font-black text-text-muted uppercase tracking-widest mb-3 ml-1">ልዩ ሙያ (Specialization)</label>
                   <select 
                     value={specialization}
                     onChange={(e) => setSpecialization(e.target.value)}
-                    className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white font-bold text-sm"
+                    className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header font-bold text-sm"
                   >
                     <option value="">ይምረጡ...</option>
                     <option value="Civil Law">የፍትሐ ብሔር ሕግ (Civil)</option>
@@ -407,57 +480,57 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">የጠበቃነት ፈቃድ ቁጥር (License #)</label>
+                  <label className="block text-sm font-black text-text-muted uppercase tracking-widest mb-3 ml-1">የጠበቃነት ፈቃድ ቁጥር (License #)</label>
                   <input
                     type="text"
                     placeholder="Lic/123/..."
                     value={licenseNumber}
                     onChange={(e) => setLicenseNumber(e.target.value)}
-                    className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white font-bold text-sm"
+                    className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header font-bold text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">አድራሻ (Address)</label>
+                  <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">አድራሻ (Address)</label>
                   <input
                     type="text"
                     placeholder="ከተማ/ክፍለ ከተማ..."
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white font-bold text-sm"
+                    className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header font-bold text-sm"
                   />
                 </div>
               </div>
             ) : (
-              <div className="space-y-4 max-h-[400px] overflow-y-auto px-1 custom-scrollbar">
+              <div className="space-y-4 max-h-[450px] overflow-y-auto px-1 custom-scrollbar pb-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ስም (First Name)</label>
+                    <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">ስም (First Name)</label>
                     <input
                       type="text"
                       placeholder="ስም..."
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
+                      className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">የአያት ስም (Last Name)</label>
+                    <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">የአያት ስም (Last Name)</label>
                     <input
                       type="text"
                       placeholder="የአያት..."
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
+                      className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ጾታ (Gender)</label>
+                    <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">ጾታ (Gender)</label>
                     <select 
                       value={gender}
                       onChange={(e) => setGender(e.target.value)}
-                      className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
+                      className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
                     >
                       <option value="">ይምረጡ...</option>
                       <option value="Male">ወንድ (Male)</option>
@@ -465,34 +538,34 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">እድሜ (Age)</label>
+                    <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">እድሜ (Age)</label>
                     <input
                       type="number"
                       placeholder="እድሜ..."
                       value={age}
                       onChange={(e) => setAge(e.target.value)}
-                      className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
+                      className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">ስራ (Occupation)</label>
+                  <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">ስራ (Occupation)</label>
                   <input
                     type="text"
                     placeholder="የስራ ሁኔታ/መስክ..."
                     value={occupation}
                     onChange={(e) => setOccupation(e.target.value)}
-                    className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
+                    className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">አድራሻ (Address)</label>
+                  <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">አድራሻ (Address)</label>
                   <input
                     type="text"
                     placeholder="ከተማ/ክፍለ ከተማ..."
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
+                    className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold text-sm"
                   />
                 </div>
               </div>
@@ -503,7 +576,7 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                disabled={isLoading || (step === 'phone' ? (useEmail ? (!email || !password) : (!phoneNumber || !password)) : step === 'lawyer_details' ? (!firstName || !lastName || !specialization || !licenseNumber || !address) : (!firstName || !lastName || !address))}
                className={`w-full py-6 rounded-3xl font-black text-sm flex items-center justify-center gap-3 transition-all
                  ${isLoading || (step === 'phone' ? (useEmail ? (!email || !password) : (!phoneNumber || !password)) : step === 'lawyer_details' ? (!firstName || !lastName || !specialization || !licenseNumber || !address) : (!firstName || !lastName || !address))
-                   ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                   ? 'bg-bg-sidebar text-text-muted cursor-not-allowed border border-border-main'
                    : 'bg-primary text-white shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95'}
                `}
             >
@@ -520,16 +593,16 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
             {step === 'phone' && (
               <div className="space-y-6 mt-6">
                 <div className="relative">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-                  <div className="relative flex justify-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">
-                    <span className="bg-[#0a0a0c] px-4">ወይም (OR)</span>
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border-main"></div></div>
+                  <div className="relative flex justify-center text-xs font-black uppercase tracking-[0.2em] text-text-muted">
+                    <span className="bg-bg-sidebar px-4 rounded-full">ወይም (OR)</span>
                   </div>
                 </div>
 
                 <button 
                   onClick={handleGoogleAuth}
                   disabled={isLoading}
-                  className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center gap-3 hover:bg-white/10 transition-all font-bold text-xs text-white"
+                  className="w-full py-4 rounded-2xl bg-bg-sidebar/50 border border-border-main flex items-center justify-center gap-3 hover:bg-bg-sidebar transition-all font-bold text-xs text-text-header"
                 >
                   <Chrome size={18} />
                   በGoogle ይቀጥሉ (Continue with Google)
@@ -543,7 +616,7 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex items-start gap-3 text-red-100 text-[11px] font-bold bg-red-500/20 p-4 rounded-2xl border border-red-500/20"
+                  className="flex items-start gap-3 text-red-500 bg-red-500/10 p-4 rounded-2xl border border-red-500/20 text-xs font-bold"
                 >
                   <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
                   <div className="flex-1">{error}</div>
@@ -551,10 +624,6 @@ export default function AuthModal({ onSuccess }: AuthModalProps) {
               )}
             </AnimatePresence>
           </div>
-          
-          <p className="text-[10px] text-center text-slate-600 mt-8 font-bold uppercase tracking-widest leading-loose">
-            ይህንን በመጠቀም በእኛ የአገልግሎት ውል እና የግላዊነት <br/> መመሪያ ተስማምተዋል።
-          </p>
         </div>
       </motion.div>
     </div>

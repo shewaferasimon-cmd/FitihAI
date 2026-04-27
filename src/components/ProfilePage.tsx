@@ -166,7 +166,7 @@ export default function ProfilePage() {
             <div className="w-32 h-32 rounded-[48px] bg-primary/20 flex items-center justify-center border-2 border-primary/30 shadow-2xl shadow-primary/20">
               <User size={64} className="text-primary" />
             </div>
-            <div className={`absolute -bottom-2 -right-2 p-3 rounded-2xl ${profile?.isSubscribed ? 'bg-amber-500 shadow-amber-500/40' : 'bg-slate-700'} shadow-lg border border-white/10`}>
+            <div className={`absolute -bottom-2 -right-2 p-3 rounded-2xl ${profile?.isSubscribed ? 'bg-amber-500 shadow-amber-500/40' : 'bg-bg-sidebar'} shadow-lg border border-border-main`}>
               <Crown size={20} className="text-white" />
             </div>
           </div>
@@ -174,41 +174,41 @@ export default function ProfilePage() {
           <div className="flex-1 text-center md:text-left">
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
               <div className="flex items-center justify-center md:justify-start gap-4">
-                <h2 className="text-4xl font-black text-white tracking-tight">
+                <h2 className="text-4xl font-black text-text-header tracking-tight">
                   {profile?.displayName || 'ያልተገለጸ ስም'}
                 </h2>
-                <button onClick={() => setIsEditing(true)} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-500 hover:text-primary transition-all border border-white/5">
+                <button onClick={() => setIsEditing(true)} className="p-3 bg-bg-glass hover:bg-bg-glass/80 rounded-2xl text-text-muted hover:text-primary transition-all border border-border-main">
                   <Edit3 size={18} />
                 </button>
               </div>
-              <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border
+              <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border
                 ${profile?.isSubscribed 
                   ? 'bg-amber-500/20 text-amber-500 border-amber-500/20' 
-                  : 'bg-slate-800 text-slate-500 border-white/5'}
+                  : 'bg-bg-sidebar text-text-muted border-border-main'}
               `}>
                 {profile?.isSubscribed ? 'ፕሮ ተጠቃሚ (Pro User)' : 'ነፃ ተጠቃሚ (Free User)'}
               </div>
             </div>
 
             <div className="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-4">
-              <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
+              <div className="flex items-center gap-2 text-text-muted font-bold text-sm">
                 <Phone size={14} className="text-primary" />
                 {profile?.phoneNumber}
               </div>
               {profile?.occupation && (
-                <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
-                  <span className="text-primary-light">💼</span>
+                <div className="flex items-center gap-2 text-text-muted font-bold text-sm">
+                  <span className="text-primary">💼</span>
                   {profile.occupation}
                 </div>
               )}
               {profile?.address && (
-                <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
-                  <span className="text-primary-light">📍</span>
+                <div className="flex items-center gap-2 text-text-muted font-bold text-sm">
+                  <span className="text-primary">📍</span>
                   {profile.address}
                 </div>
               )}
-              <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
-                <span className="text-primary-light">👤</span>
+              <div className="flex items-center gap-2 text-text-muted font-bold text-sm">
+                <span className="text-primary">👤</span>
                 {profile?.gender ? (profile.gender === 'Male' ? 'ወንድ' : 'ሴት') : 'ጾታ አልተገለጸም'}
                 {profile?.age ? ` • ${profile.age} አመት` : ''}
               </div>
@@ -216,13 +216,13 @@ export default function ProfilePage() {
 
             {/* Usage Stats */}
             <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-4">
-               <div className="bg-navy/30 border border-white/5 rounded-2xl p-4">
-                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">ውይይቶች (Chats)</p>
-                  <p className="text-xl font-black text-white">{profile?.chatCount || 0}</p>
+               <div className="bg-bg-sidebar/30 border border-border-main rounded-2xl p-4">
+                  <p className="text-xs text-text-muted font-black uppercase tracking-widest mb-1">ውይይቶች (Chats)</p>
+                  <p className="text-xl font-black text-text-header">{profile?.chatCount || 0}</p>
                </div>
-               <div className="bg-navy/30 border border-white/5 rounded-2xl p-4">
-                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">ሰነዶች (Docs)</p>
-                  <p className="text-xl font-black text-white">{profile?.docCount || 0}</p>
+               <div className="bg-bg-sidebar/30 border border-border-main rounded-2xl p-4">
+                  <p className="text-xs text-text-muted font-black uppercase tracking-widest mb-1">ሰነዶች (Docs)</p>
+                  <p className="text-xl font-black text-text-header">{profile?.docCount || 0}</p>
                </div>
             </div>
           </div>
@@ -232,46 +232,46 @@ export default function ProfilePage() {
       {/* Edit Profile Modal */}
       <AnimatePresence>
         {isEditing && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-midnight/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-bg-main/80 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-navy border border-white/10 p-8 rounded-[40px] w-full max-w-xl relative flex flex-col gap-6 shadow-2xl overflow-hidden"
+              className="glass border border-border-main p-8 rounded-[40px] w-full max-w-xl relative flex flex-col gap-6 shadow-2xl overflow-hidden"
             >
               <div className="absolute top-0 right-0 p-6">
-                <button onClick={() => setIsEditing(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                <button onClick={() => setIsEditing(false)} className="p-2 text-text-muted hover:text-text-header transition-colors">
                   <X size={24} />
                 </button>
               </div>
 
-              <h3 className="text-2xl font-black text-white">ማህደር ያስተካክሉ (Edit Profile)</h3>
+              <h3 className="text-2xl font-black text-text-header">ማህደር ያስተካክሉ (Edit Profile)</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto px-1 custom-scrollbar">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ስም (First Name)</label>
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">ስም (First Name)</label>
                   <input 
                     value={formData.firstName}
                     onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    className="w-full bg-bg-sidebar/80 border border-border-main px-6 py-4 rounded-2xl text-text-header font-bold focus:ring-2 focus:ring-primary/40 outline-none"
                     placeholder="ስም..."
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">የአያት ስም (Last Name)</label>
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">የአያት ስም (Last Name)</label>
                   <input 
                     value={formData.lastName}
                     onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    className="w-full bg-bg-sidebar/80 border border-border-main px-6 py-4 rounded-2xl text-text-header font-bold focus:ring-2 focus:ring-primary/40 outline-none"
                     placeholder="የአያት ስም..."
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ጾታ (Gender)</label>
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">ጾታ (Gender)</label>
                   <select 
                     value={formData.gender}
                     onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    className="w-full bg-bg-sidebar/80 border border-border-main px-6 py-4 rounded-2xl text-text-header font-bold focus:ring-2 focus:ring-primary/40 outline-none"
                   >
                     <option value="">ይምረጡ...</option>
                     <option value="Male">ወንድ (Male)</option>
@@ -279,30 +279,30 @@ export default function ProfilePage() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">እድሜ (Age)</label>
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">እድሜ (Age)</label>
                   <input 
                     type="number"
                     value={formData.age}
                     onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
-                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    className="w-full bg-bg-sidebar/80 border border-border-main px-6 py-4 rounded-2xl text-text-header font-bold focus:ring-2 focus:ring-primary/40 outline-none"
                     placeholder="እድሜ..."
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ስራ (Occupation)</label>
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">ስራ (Occupation)</label>
                   <input 
                     value={formData.occupation}
                     onChange={(e) => setFormData(prev => ({ ...prev, occupation: e.target.value }))}
-                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    className="w-full bg-bg-sidebar/80 border border-border-main px-6 py-4 rounded-2xl text-text-header font-bold focus:ring-2 focus:ring-primary/40 outline-none"
                     placeholder="የስራ ሁኔታ/መስክ..."
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">አድራሻ (Address)</label>
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">አድራሻ (Address)</label>
                   <input 
                     value={formData.address}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                    className="w-full bg-midnight border border-white/5 px-6 py-4 rounded-2xl text-white font-bold focus:ring-2 focus:ring-primary/40 outline-none"
+                    className="w-full bg-bg-sidebar/80 border border-border-main px-6 py-4 rounded-2xl text-text-header font-bold focus:ring-2 focus:ring-primary/40 outline-none"
                     placeholder="ከተማ/ክፍለ ከተማ..."
                   />
                 </div>
@@ -330,7 +330,7 @@ export default function ProfilePage() {
 
       {/* History Tabs */}
       <div className="flex-1 flex flex-col">
-        <div className="flex gap-10 border-b border-white/5 mb-10 pb-4">
+        <div className="flex gap-10 border-b border-border-main mb-10 pb-4">
           {[
             { id: 'docs', label: 'ያዘጋጇቸው ሰነዶች', icon: FileText, count: docs.length },
             { id: 'chats', label: 'የቀድሞ ውይይቶች', icon: MessageSquare, count: chats.length }
@@ -339,12 +339,12 @@ export default function ProfilePage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-3 font-black text-sm uppercase tracking-widest relative pb-4 transition-all
-                ${activeTab === tab.id ? 'text-primary' : 'text-slate-500 hover:text-slate-300'}
+                ${activeTab === tab.id ? 'text-primary' : 'text-text-muted hover:text-text-header'}
               `}
             >
               <tab.icon size={18} />
               {tab.label}
-              <span className="bg-white/5 px-2 py-0.5 rounded-lg text-[10px]">{tab.count}</span>
+              <span className="bg-bg-glass px-2 py-0.5 rounded-lg text-xs">{tab.count}</span>
               {activeTab === tab.id && (
                 <motion.div layoutId="profile-tab-line" className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
               )}
@@ -371,22 +371,22 @@ export default function ProfilePage() {
                   docs.map((doc) => (
                     <motion.div 
                       key={doc.id}
-                      className="glass group p-6 rounded-[32px] border border-white/5 hover:border-primary/20 transition-all flex flex-col"
+                      className="glass group p-6 rounded-[32px] border border-border-main hover:border-primary/20 transition-all flex flex-col shadow-sm"
                     >
                       <div className="flex items-center justify-between mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                           <FileText size={20} className="text-primary" />
                         </div>
-                        <span className="text-[10px] font-bold text-slate-600 uppercase">
+                        <span className="text-xs font-bold text-text-muted uppercase">
                           {doc.createdAt instanceof Timestamp ? doc.createdAt.toDate().toLocaleDateString() : ''}
                         </span>
                       </div>
-                      <h4 className="text-white font-black text-lg mb-2 leading-tight">{doc.title}</h4>
-                      <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-6">{doc.type}</p>
+                      <h4 className="text-text-header font-black text-lg mb-2 leading-tight">{doc.title}</h4>
+                      <p className="text-text-muted text-xs font-bold uppercase tracking-widest mb-6">{doc.type}</p>
                       
                       <button 
                         onClick={() => downloadDoc(doc)}
-                        className="mt-auto w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl flex items-center justify-center gap-2 text-xs font-black transition-all"
+                        className="mt-auto w-full py-3 bg-bg-sidebar hover:bg-bg-sidebar/80 text-text-header rounded-2xl flex items-center justify-center gap-2 text-xs font-black transition-all border border-border-main"
                       >
                         <Download size={14} />
                         አውርድ (Download)
@@ -412,21 +412,21 @@ export default function ProfilePage() {
                   chats.map((chat) => (
                     <div 
                       key={chat.id}
-                      className={`p-6 rounded-3xl glass border border-white/5 flex gap-6 ${chat.role === 'user' ? 'bg-navy/20' : ''}`}
+                      className={`p-6 rounded-3xl glass border border-border-main flex gap-6 ${chat.role === 'user' ? 'bg-bg-glass' : ''}`}
                     >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${chat.role === 'user' ? 'bg-primary/20 text-primary' : 'bg-slate-700 text-slate-300'}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${chat.role === 'user' ? 'bg-primary/20 text-primary' : 'bg-bg-sidebar text-text-muted'}`}>
                         {chat.role === 'user' ? <User size={18} /> : <MessageSquare size={18} />}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                          <span className="text-xs font-black uppercase tracking-widest text-text-muted">
                             {chat.role === 'user' ? 'እርስዎ' : 'ፍትህ AI'}
                           </span>
-                          <span className="text-[10px] text-slate-700 font-bold">
+                          <span className="text-xs text-text-muted font-bold">
                             {chat.createdAt instanceof Timestamp ? chat.createdAt.toDate().toLocaleString() : ''}
                           </span>
                         </div>
-                        <p className="text-sm text-slate-300 leading-relaxed">{chat.text}</p>
+                        <p className="text-sm text-text-main leading-relaxed font-medium">{chat.text}</p>
                       </div>
                     </div>
                   ))

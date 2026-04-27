@@ -5,32 +5,64 @@
   --font-sans: "Noto Sans Ethiopic", "Inter", ui-sans-serif, system-ui, sans-serif;
   --color-primary: #3b82f6;
   --color-accent: #06b6d4;
-  --color-midnight: #020617;
-  --color-navy: #0f172a;
+  
+  /* Shared variable-driven colors */
+  --color-bg-main: var(--bg-main);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-bg-glass: var(--bg-glass);
+  --color-border-main: var(--border-main);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-text-header: var(--text-header);
+}
+
+:root {
+  --bg-main: #020617; /* midnight */
+  --bg-sidebar: #0f172a; /* navy */
+  --bg-glass: rgba(255, 255, 255, 0.05);
+  --border-main: rgba(255, 255, 255, 0.1);
+  --text-main: #e2e8f0; /* slate-200 */
+  --text-muted: #94a3b8; /* slate-400 */
+  --text-header: #ffffff;
+}
+
+[data-theme="light"] {
+  --bg-main: #f8fafc; /* slate-50 */
+  --bg-sidebar: #ffffff;
+  --bg-glass: rgba(0, 0, 0, 0.03);
+  --border-main: rgba(0, 0, 0, 0.08);
+  --text-main: #334155; /* slate-700 */
+  --text-muted: #64748b; /* slate-500 */
+  --text-header: #0f172a; /* slate-900 */
 }
 
 @layer base {
+  html {
+    font-size: 16px;
+  }
   body {
-    @apply bg-midnight text-slate-200 antialiased;
+    @apply bg-bg-main text-text-main antialiased text-base selection:bg-primary/30;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    min-height: 100dvh;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--border-main);
     border-radius: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    @apply bg-primary/30;
   }
 
   /* Glassmorphism */
   .glass {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+    @apply bg-bg-glass backdrop-blur-xl border border-border-main;
   }
 
   .glow-primary {
@@ -39,13 +71,17 @@
 
   /* Markdown custom styles within chat bubbles */
   .prose h1, .prose h2, .prose h3 {
-    @apply font-bold text-white mb-2;
+    @apply font-bold text-text-header mb-2;
   }
   .prose ul {
-    @apply list-disc list-inside mb-4 text-slate-300;
+    @apply list-disc list-inside mb-4 text-text-main;
   }
   .prose p {
-    @apply mb-3 last:mb-0 text-slate-300;
+    @apply mb-3 last:mb-0 text-text-main leading-relaxed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-text-header;
   }
 }
 

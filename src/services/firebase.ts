@@ -34,14 +34,48 @@ export const signInEmail = async (email: string, pass: string) => {
   }
 };
 
-// Phone + Password (Virtual Email) Auth
+// Phone normalization helper
+export const normalizePhone = (phone: string) => {
+  let cleaned = phone.replace(/\D/g, '');
+  
+  // Normalize Ethiopian numbers
+  if (cleaned.startsWith('0')) {
+    // 09... -> 2519...
+    cleaned = '251' + cleaned.substring(1);
+  } else if (cleaned.length === 9 && (cleaned.startsWith('9') || cleaned.startsWith('7'))) {
+    // 9... -> 2519...
+    cleaned = '251' + cleaned;
+  }
+  
+  return cleaned;
+};
+
+// Phone + Password (Virtual Email) Auth helper
+const getVirtualEmail = (phone: string) => {
+  const normalized = normalizePhone(phone);
+  return `${normalized}@fitih.ai`;
+};
+
 export const signInPhonePassword = async (phone: string, pass: string) => {
   try {
-    // Generate a secure virtual email from the phone number
-    const virtualEmail = `${phone.replace(/\D/g, '')}@fitih.ai`;
+    const virtualEmail = getVirtualEmail(phone);
     const result = await signInWithEmailAndPassword(auth, virtualEmail, pass);
     return result.user;
-  } catch (error) {
+  } catch (error: any) {
+    // Return ability for demo accounts: if it's a demo number and password is '123456', 
+    // try to auto-signup if signin fails
+    const normalized = normalizePhone(phone);
+    const demoNumbers = ['251900000000', '251911111111', '251933333333', '251999999999'];
+    if (demoNumbers.includes(normalized) && pass === '123456') {
+      try {
+        const virtualEmail = getVirtualEmail(phone);
+        const result = await createUserWithEmailAndPassword(auth, virtualEmail, pass);
+        return result.user;
+      } catch (signupError) {
+        // If it still fails, throw original error
+        throw error;
+      }
+    }
     console.error('Phone+Pass Sign In Error:', error);
     throw error;
   }
@@ -49,7 +83,7 @@ export const signInPhonePassword = async (phone: string, pass: string) => {
 
 export const signUpPhonePassword = async (phone: string, pass: string) => {
   try {
-    const virtualEmail = `${phone.replace(/\D/g, '')}@fitih.ai`;
+    const virtualEmail = getVirtualEmail(phone);
     const result = await createUserWithEmailAndPassword(auth, virtualEmail, pass);
     return result.user;
   } catch (error) {
@@ -67,27 +101,28 @@ export const signUpEmail = async (email: string, pass: string) => {
     throw error;
   }
 };
-import { getFirestore, doc, getDoc, setDoc, addDoc, serverTimestamp, onSnapshot, collection, query, where, orderBy, updateDoc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDoc, setDoc, addDoc, serverTimestamp, onSnapshot, collection, query, where, orderBy, updateDoc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-// CRITICAL: Connection Test
-async function testConnection() {
+// Use initializeFirestore with forceLongPolling for better reliability in some environments
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, firebaseConfig.firestoreDatabaseId);
+
+export const toggleUserSubscription = async (userId: string, currentStatus: boolean) => {
+  const userRef = doc(db, 'users', userId);
   try {
-    // Attempt to ping the backend
-    await getDocFromServer(doc(db, '_health_', 'check')).catch(() => {});
-    console.log("Firestore connection initialized.");
+    await updateDoc(userRef, {
+      isSubscribed: !currentStatus
+    });
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Firestore connectivity issue detected. Please check if your database is provisioned and reachable.");
-    }
+    handleFirestoreError(error, OperationType.UPDATE, `users/${userId}`);
   }
-}
-testConnection();
+};
 
 // Firestore Error Handling utility
 export enum OperationType {
@@ -138,16 +173,23 @@ export const syncUserProfile = async (user: User, additionalData?: {
   const userRef = doc(db, 'users', user.uid);
   try {
     const userDoc = await getDoc(userRef);
+    
+    // Demo accounts check for ANY login
+    let role = additionalData?.role || 'user';
+    let isSubscribed = additionalData?.role === 'lawyer' ? false : (additionalData?.isSubscribed ?? false);
+    
+    let rawPhone = user.phoneNumber || additionalData?.phoneNumber || '';
+    const currentPhone = rawPhone ? `+${normalizePhone(rawPhone)}` : '';
+    
+    const isAdminAccount = (currentPhone === '+251900000000' || currentPhone === '+251999999999');
+    const isProAccount = (currentPhone === '+251911111111' || currentPhone === '+251933333333');
+
     if (!userDoc.exists()) {
-      // Demo accounts check
-      let role = additionalData?.role || 'user';
-      let isSubscribed = false;
-      const currentPhone = user.phoneNumber || additionalData?.phoneNumber || '';
       
-      if (currentPhone === '+251900000000') {
+      if (isAdminAccount) {
         role = 'admin';
         isSubscribed = true;
-      } else if (currentPhone === '+251911111111' || currentPhone === '+251933333333') {
+      } else if (isProAccount) {
         isSubscribed = true;
       }
 
@@ -195,7 +237,19 @@ export const syncUserProfile = async (user: User, additionalData?: {
         });
       }
     } else {
-      await updateDoc(userRef, { lastLogin: serverTimestamp() });
+      // If user exists but is a demo admin/pro account, ensure their role/status is correct
+      if (isAdminAccount || isProAccount) {
+        const updates: any = { lastLogin: serverTimestamp() };
+        if (isAdminAccount) {
+          updates.role = 'admin';
+          updates.isSubscribed = true;
+        } else if (isProAccount) {
+          updates.isSubscribed = true;
+        }
+        await updateDoc(userRef, updates);
+      } else {
+        await updateDoc(userRef, { lastLogin: serverTimestamp() });
+      }
     }
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);

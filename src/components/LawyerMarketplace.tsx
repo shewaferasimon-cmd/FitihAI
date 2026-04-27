@@ -77,29 +77,29 @@ export default function LawyerMarketplace({ userId }: { userId: string }) {
     <div className="max-w-7xl mx-auto p-6 lg:p-12 relative z-10 flex flex-col gap-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-4xl font-black text-white flex items-center gap-4">
+          <h2 className="text-4xl font-black text-text-header flex items-center gap-4">
             <Briefcase className="text-primary" size={40} />
             የጠበቆች ገበያ (Lawyer Finder)
           </h2>
-          <p className="text-slate-500 font-bold mt-2 uppercase tracking-widest text-xs">ታማኝ እና ልምድ ካላቸው ጠበቆች ጋር ይገናኙ</p>
+          <p className="text-text-muted font-bold mt-2 uppercase tracking-widest text-xs">ታማኝ እና ልምድ ካላቸው ጠበቆች ጋር ይገናኙ</p>
         </div>
 
         <div className="flex items-center gap-4">
-           <div className="glass px-6 py-3 rounded-2xl border border-white/5 flex items-center gap-3">
+           <div className="glass px-6 py-3 rounded-2xl border border-border-main flex items-center gap-3">
              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{lawyers.length} ጠበቆች ተገኝተዋል</span>
+             <span className="text-xs font-black text-text-muted uppercase tracking-widest">{lawyers.length} ጠበቆች ተገኝተዋል</span>
            </div>
         </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
           <input 
             placeholder="ጠበቃ በስም ይፈልጉ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-navy/50 border border-white/5 rounded-2xl pl-12 pr-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold"
+            className="w-full bg-bg-sidebar/50 border border-border-main rounded-2xl pl-12 pr-6 py-4 text-text-header focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold"
           />
         </div>
         
@@ -109,7 +109,7 @@ export default function LawyerMarketplace({ userId }: { userId: string }) {
                key={spec}
                onClick={() => setFilterSpec(spec)}
                className={`px-6 py-3 rounded-2xl text-xs font-black transition-all border whitespace-nowrap
-                 ${filterSpec === spec ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'glass text-slate-400 border-white/5 hover:text-white'}
+                 ${filterSpec === spec ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'glass text-text-muted border-border-main hover:text-text-header'}
                `}
              >
                {spec}
@@ -125,14 +125,14 @@ export default function LawyerMarketplace({ userId }: { userId: string }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="glass p-8 rounded-[40px] border border-white/5 hover:border-primary/40 transition-all group relative overflow-hidden"
+            className="glass p-8 rounded-[40px] border border-border-main hover:border-primary/40 transition-all group relative overflow-hidden shadow-sm"
           >
             <div className="flex items-start justify-between mb-8">
               <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary font-black text-2xl border border-primary/20">
                 {lawyer.displayName.charAt(0)}
               </div>
               {lawyer.badge && (
-                <div className="px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-widest border border-amber-500/20 flex items-center gap-2">
+                <div className="px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-black uppercase tracking-widest border border-amber-500/20 flex items-center gap-2">
                   <Award size={12} />
                   {lawyer.badge}
                 </div>
@@ -141,7 +141,7 @@ export default function LawyerMarketplace({ userId }: { userId: string }) {
 
             <div className="space-y-4">
               <div>
-                <h3 className="text-xl font-black text-white flex items-center gap-2">
+                <h3 className="text-xl font-black text-text-header flex items-center gap-2">
                   {lawyer.displayName}
                   {lawyer.isVerified && <CheckCircle size={16} className="text-emerald-500" />}
                 </h3>
@@ -150,11 +150,11 @@ export default function LawyerMarketplace({ userId }: { userId: string }) {
 
               <div className="flex items-center gap-6">
                  <div className="flex flex-col gap-1">
-                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">ተመክሮ</span>
-                   <span className="text-white font-black text-sm">{lawyer.experience}+ ዓመታት</span>
+                   <span className="text-xs font-black text-text-muted uppercase tracking-widest">ተመክሮ</span>
+                   <span className="text-text-header font-black text-sm">{lawyer.experience}+ ዓመታት</span>
                  </div>
                  <div className="flex flex-col gap-1">
-                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">ደረጃ</span>
+                   <span className="text-xs font-black text-text-muted uppercase tracking-widest">ደረጃ</span>
                    <div className="flex items-center gap-1 text-amber-500">
                      <Star size={14} fill="currentColor" />
                      <span className="font-black text-sm">{lawyer.rating}</span>
@@ -162,18 +162,18 @@ export default function LawyerMarketplace({ userId }: { userId: string }) {
                  </div>
               </div>
 
-              <p className="text-slate-400 text-sm font-bold line-clamp-2 leading-relaxed h-10">
+              <p className="text-text-main text-sm font-medium line-clamp-2 leading-relaxed h-10">
                 {lawyer.bio}
               </p>
 
-              <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+              <div className="pt-6 border-t border-border-main flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">ዋጋ/ሰዓት</span>
-                  <p className="text-white font-black text-lg">{lawyer.hourlyRate} ብር</p>
+                  <span className="text-xs font-black text-text-muted uppercase tracking-widest block mb-1">ዋጋ/ሰዓት</span>
+                  <p className="text-text-header font-black text-lg">{lawyer.hourlyRate} ብር</p>
                 </div>
                 <button 
                   onClick={() => setSelectedLawyer(lawyer)}
-                  className="px-6 py-3 bg-white/5 hover:bg-primary hover:text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all text-slate-300 border border-white/5"
+                  className="px-6 py-3 bg-bg-glass hover:bg-primary hover:text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all text-text-header border border-border-main"
                 >
                   ቀጠሮ ይያዙ
                 </button>
@@ -191,63 +191,63 @@ export default function LawyerMarketplace({ userId }: { userId: string }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-midnight/80 backdrop-blur-xl"
+              className="absolute inset-0 bg-bg-main/80 backdrop-blur-xl"
               onClick={() => !isBooking && setSelectedLawyer(null)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-xl glass rounded-[48px] p-8 lg:p-12 overflow-hidden"
+              className="relative w-full max-w-xl glass rounded-[48px] p-8 lg:p-12 overflow-hidden border border-border-main"
             >
               {bookingSuccess ? (
                 <div className="text-center py-12 space-y-6">
                   <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto text-emerald-500">
                     <CheckCircle size={48} />
                   </div>
-                  <h3 className="text-3xl font-black text-white">ቀጠሮዎ በተሳካ ሁኔታ ተመዝግቧል!</h3>
-                  <p className="text-slate-400 font-bold">ጠበቃው/ዋ ጥያቄዎን መርምረው ምላሽ ይሰጡዎታል። በግል ማህደርዎ መከታተል ይችላሉ።</p>
+                  <h3 className="text-3xl font-black text-text-header">ቀጠሮዎ በተሳካ ሁኔታ ተመዝግቧል!</h3>
+                  <p className="text-text-muted font-bold">ጠበቃው/ዋ ጥያቄዎን መርምረው ምላሽ ይሰጡዎታል። በግል ማህደርዎ መከታተል ይችላሉ።</p>
                 </div>
               ) : (
                 <div className="space-y-8">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-3xl font-black text-white mb-2">ቀጠሮ ይያዙ</h3>
-                      <p className="text-slate-500 font-bold text-sm">ከ {selectedLawyer.displayName} ጋር ለሚደረግ የህግ ምክክር</p>
+                      <h3 className="text-3xl font-black text-text-header mb-2">ቀጠሮ ይያዙ</h3>
+                      <p className="text-text-muted font-bold text-sm">ከ {selectedLawyer.displayName} ጋር ለሚደረግ የህግ ምክክር</p>
                     </div>
-                    <button onClick={() => setSelectedLawyer(null)} className="p-3 text-slate-500 hover:text-white bg-white/5 rounded-2xl">
+                    <button onClick={() => setSelectedLawyer(null)} className="p-3 text-text-muted hover:text-text-header bg-bg-glass rounded-2xl">
                       <X size={20} />
                     </button>
                   </div>
 
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">የምክክሩ ርዕስ (Topic)</label>
+                      <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">የምክክሩ ርዕስ (Topic)</label>
                       <input 
                         placeholder="ለምሳሌ፦ የቤት ሽያጭ ውል ምርመራ"
                         value={bookingTopic}
                         onChange={(e) => setBookingTopic(e.target.value)}
-                        className="w-full bg-navy/50 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold"
+                        className="w-full bg-bg-sidebar/50 border border-border-main rounded-2xl px-6 py-4 text-text-header focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold"
                       />
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">ቀን እና ሰዓት</label>
+                      <label className="text-xs font-black text-text-muted uppercase tracking-widest ml-1">ቀን እና ሰዓት</label>
                       <input 
                         type="datetime-local"
                         value={bookingDate}
                         onChange={(e) => setBookingDate(e.target.value)}
-                        className="w-full bg-navy/50 border border-white/5 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold appearance-none invert hue-rotate-180"
+                        className="w-full bg-bg-sidebar/50 border border-border-main rounded-2xl px-6 py-4 text-text-header focus:outline-none focus:ring-2 focus:ring-primary/40 font-bold appearance-none theme-datetime"
                       />
                     </div>
 
-                    <div className="p-6 bg-white/5 rounded-3xl border border-white/5 grid grid-cols-2 gap-4">
+                    <div className="p-6 bg-bg-sidebar/30 rounded-3xl border border-border-main grid grid-cols-2 gap-4">
                        <div className="flex flex-col gap-1">
-                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">አገልግሎት</span>
-                         <span className="text-white font-black text-sm">የ1 ሰዓት ምክክር</span>
+                         <span className="text-xs font-black text-text-muted uppercase tracking-widest">አገልግሎት</span>
+                         <span className="text-text-header font-black text-sm">የ1 ሰዓት ምክክር</span>
                        </div>
                        <div className="flex flex-col gap-1 text-right">
-                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">ክፍያ</span>
+                         <span className="text-xs font-black text-text-muted uppercase tracking-widest">ክፍያ</span>
                          <span className="text-primary font-black text-lg">{selectedLawyer.hourlyRate} ብር</span>
                        </div>
                     </div>

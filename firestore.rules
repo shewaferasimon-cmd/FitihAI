@@ -42,28 +42,18 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
              (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-              (request.auth.token.phone_number == "+251900000000" && request.auth.token.firebase.sign_in_provider == 'phone')); 
+              request.auth.token.email in ['251900000000@fitih.ai', '251999999999@fitih.ai']); 
     }
 
     function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'phoneNumber', 'role', 'isSubscribed']) &&
+      return data.keys().hasAll(['uid', 'role', 'isSubscribed']) &&
              data.uid == request.auth.uid &&
-             data.role in ['user', 'admin', 'lawyer'] &&
-             data.phoneNumber is string && data.phoneNumber.size() >= 10 &&
-             (!('firstName' in data) || (data.firstName is string && data.firstName.size() <= 100)) &&
-             (!('lastName' in data) || (data.lastName is string && data.lastName.size() <= 100)) &&
-             (!('age' in data) || (data.age is number)) &&
-             (!('occupation' in data) || (data.occupation is string && data.occupation.size() <= 100));
+             data.role in ['user', 'admin', 'lawyer'];
     }
 
     function isValidLawyer(data) {
-      return data.keys().hasAll(['uid', 'displayName', 'specialization', 'licenseNumber']) &&
-             data.uid == request.auth.uid &&
-             data.displayName is string && data.displayName.size() > 0 &&
-             data.specialization is string &&
-             data.licenseNumber is string &&
-             (!('firstName' in data) || (data.firstName is string && data.firstName.size() <= 100)) &&
-             (!('lastName' in data) || (data.lastName is string && data.lastName.size() <= 100));
+      return data.keys().hasAll(['uid', 'specialization', 'licenseNumber']) &&
+             data.uid == request.auth.uid;
     }
 
     function isValidConsultation(data) {

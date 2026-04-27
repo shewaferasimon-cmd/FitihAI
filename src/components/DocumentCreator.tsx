@@ -269,8 +269,8 @@ export default function DocumentCreator() {
             className="flex-1 flex flex-col"
           >
             <div className="mb-12 text-center">
-              <h2 className="text-4xl font-extrabold text-white mb-4 tracking-tight">የሕግ ሰነዶች ማዘጋጃ</h2>
-              <p className="text-slate-400 max-w-2xl mx-auto text-sm leading-relaxed">አዘጋጅተው ማውረድ የሚፈልጉትን የሰነድ ዓይነት ይምረጡ።</p>
+              <h2 className="text-4xl font-extrabold text-text-header mb-4 tracking-tight">የሕግ ሰነዶች ማዘጋጃ</h2>
+              <p className="text-text-muted max-w-2xl mx-auto text-sm leading-relaxed">አዘጋጅተው ማውረድ የሚፈልጉትን የሰነድ ዓይነት ይምረጡ።</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -281,13 +281,13 @@ export default function DocumentCreator() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.05 }}
                   onClick={() => setSelectedType(type)}
-                  className="glass group p-8 rounded-[32px] text-left transition-all hover:bg-white/10 hover:scale-[1.03] border border-white/5 hover:border-primary/30 relative overflow-hidden"
+                  className="glass group p-8 rounded-[32px] text-left transition-all hover:bg-bg-glass hover:scale-[1.03] border border-border-main hover:border-primary/30 relative overflow-hidden"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary transition-colors">
                     <FileText size={24} className="text-primary group-hover:text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2 leading-tight">{type.name.split(' (')[0]}</h3>
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-widest">{type.name.split('(')[1]?.replace(')', '') || 'Agreement'}</p>
+                  <h3 className="text-lg font-bold text-text-header mb-2 leading-tight">{type.name.split(' (')[0]}</h3>
+                  <p className="text-xs text-text-muted font-medium uppercase tracking-widest">{type.name.split('(')[1]?.replace(')', '') || 'Agreement'}</p>
                   <div className="mt-8 flex items-center gap-2 text-primary font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                     ይምረጡ (Select) <ChevronRight size={14} />
                   </div>
@@ -306,14 +306,14 @@ export default function DocumentCreator() {
             <div className="flex items-center justify-between mb-10">
               <button 
                 onClick={resetCreator}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group"
+                className="flex items-center gap-2 text-text-muted hover:text-text-header transition-colors group"
               >
                 <ChevronRight className="rotate-180" size={18} />
                 <span className="text-xs font-black uppercase tracking-widest">ወደ ምርጫ ተመለስ (Back)</span>
               </button>
-              <div className="flex items-center gap-2 glass px-4 py-2 rounded-full">
+              <div className="flex items-center gap-2 glass px-4 py-2 rounded-full border border-border-main">
                 <FileText size={14} className="text-primary" />
-                <span className="text-[10px] font-bold text-white uppercase tracking-wider">{selectedType.name.split(' (')[0]}</span>
+                <span className="text-xs font-bold text-text-header uppercase tracking-wider">{selectedType.name.split(' (')[0]}</span>
               </div>
             </div>
 
@@ -321,11 +321,11 @@ export default function DocumentCreator() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="glass rounded-[40px] p-12 relative overflow-hidden"
+                className="glass rounded-[40px] p-8 sm:p-12 relative overflow-hidden border border-border-main shadow-2xl"
               >
                 <div className="mb-10 text-center sm:text-left">
-                  <h3 className="text-2xl font-black text-white mb-2">መረጃዎችን ያስገቡ</h3>
-                  <p className="text-slate-500 text-xs font-medium italic">ሰነዱን ለማጠናቀቅ ሁሉንም ቦታዎች ይሙሉ</p>
+                  <h3 className="text-2xl font-black text-text-header mb-2">መረጃዎችን ያስገቡ</h3>
+                  <p className="text-text-muted text-xs font-medium italic">ሰነዱን ለማጠናቀቅ ሁሉንም ቦታዎች ይሙሉ</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -337,13 +337,13 @@ export default function DocumentCreator() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.05 }}
                       >
-                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">{field}</label>
+                        <label className="block text-xs font-black text-text-muted uppercase tracking-widest mb-3 ml-1">{field}</label>
                         <input
                           type="text"
                           placeholder={`${field}...`}
                           value={formData[field] || ''}
                           onChange={(e) => handleFieldChange(field, e.target.value)}
-                          className="w-full bg-navy/80 border border-white/5 rounded-2xl px-6 py-4 text-sm text-white placeholder-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium"
+                          className="w-full bg-bg-sidebar/80 border border-border-main rounded-2xl px-6 py-4 text-sm text-text-header placeholder-text-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
                         />
                       </motion.div>
                     ))}
@@ -392,7 +392,7 @@ export default function DocumentCreator() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="glass rounded-[48px] p-12 shadow-2xl border border-white/10"
+                className="glass rounded-[48px] p-8 sm:p-12 shadow-2xl border border-border-main"
               >
                 <div className="flex items-center justify-between mb-10">
                   <div className="flex items-center gap-5">
@@ -400,14 +400,14 @@ export default function DocumentCreator() {
                       <CheckCircle2 className="text-green-500" size={28} />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-white leading-tight">ሰነዱ ዝግጁ ነው!</h3>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 opacity-70">Ready for download</p>
+                      <h3 className="text-2xl font-black text-text-header leading-tight">ሰነዱ ዝግጁ ነው!</h3>
+                      <p className="text-xs text-text-muted font-bold uppercase tracking-widest mt-1 opacity-70">Ready for download</p>
                     </div>
                   </div>
                 </div>
                 
-                <div className="bg-navy/30 border border-white/5 rounded-[32px] p-10 h-[500px] overflow-y-auto mb-10 custom-scrollbar shadow-inner">
-                   <pre className="whitespace-pre-wrap text-[15px] text-slate-200 font-sans leading-[1.9]">
+                <div className="bg-bg-sidebar/30 border border-border-main rounded-[32px] p-8 h-[500px] overflow-y-auto mb-10 custom-scrollbar shadow-inner">
+                   <pre className="whitespace-pre-wrap text-base text-text-main font-sans leading-[1.9]">
                      {generatedContent}
                    </pre>
                 </div>
@@ -415,13 +415,13 @@ export default function DocumentCreator() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={() => setGeneratedContent(null)}
-                    className="flex-1 bg-white/5 text-white py-5 rounded-[24px] font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10"
+                    className="flex-1 bg-bg-glass text-text-header py-5 rounded-[24px] font-black text-xs uppercase tracking-widest hover:bg-bg-glass/80 transition-all border border-border-main"
                   >
                     እንደገና አርም (Edit)
                   </button>
                   <button
                     onClick={downloadWordFile}
-                    className="flex-[2] bg-white text-midnight py-5 rounded-[24px] font-black text-sm flex items-center justify-center gap-3 hover:bg-slate-100 transition-all shadow-xl group"
+                    className="flex-[2] bg-primary text-white py-5 rounded-[24px] font-black text-sm flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-primary/30 group"
                   >
                     <Download size={24} />
                     ወደ Word ፋይል ቀይር (.docx)
@@ -439,7 +439,7 @@ export default function DocumentCreator() {
              <motion.div 
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
-               className="absolute inset-0 bg-midnight/95 backdrop-blur-2xl"
+               className="absolute inset-0 bg-bg-main/95 backdrop-blur-2xl"
                onClick={() => setShowPaywall(false)}
              />
              <motion.div 
@@ -450,8 +450,8 @@ export default function DocumentCreator() {
                 <div className="w-20 h-20 rounded-[32px] bg-primary/20 flex items-center justify-center mx-auto mb-8">
                   <Sparkles size={40} className="text-primary" />
                 </div>
-                <h3 className="text-3xl font-black text-white mb-4">የነፃ ሙከራዎ ተጠናቋል</h3>
-                <p className="text-slate-400 mb-10 leading-relaxed font-bold">
+                <h3 className="text-3xl font-black text-text-header mb-4">የነፃ ሙከራዎ ተጠናቋል</h3>
+                <p className="text-text-muted mb-10 leading-relaxed font-bold">
                   ለነፃ ተጠቃሚዎች የሚፈቀደው 1 ሰነድ ብቻ ነው። ተጨማሪ ሰነዶችን ለማዘጋጀት በወር 200 ብር ሰብስክራይብ ያድርጉ ወይም ለዚህ ሰነድ ብቻ 20 ብር ይክፈሉ።
                 </p>
                 
@@ -460,13 +460,13 @@ export default function DocumentCreator() {
                      <Crown size={20} />
                      ያልተገደበ አገልግሎት (200 ብር/ወር)
                    </button>
-                   <button className="w-full py-5 bg-white/5 text-white border border-white/10 rounded-3xl font-black flex items-center justify-center gap-3 hover:bg-white/10 transition-all">
+                   <button className="w-full py-5 bg-bg-glass text-text-header border border-border-main rounded-3xl font-black flex items-center justify-center gap-3 hover:bg-bg-glass/20 transition-all">
                      <CreditCard size={20} />
                      ለዚህ ሰነድ ብቻ ክፈሉ (20 ብር)
                    </button>
                    <button 
                      onClick={() => setShowPaywall(false)}
-                     className="w-full py-4 text-slate-500 font-bold text-xs"
+                     className="w-full py-4 text-text-muted font-bold text-xs"
                    >
                      ተመለስ (Cancel)
                    </button>
